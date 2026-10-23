@@ -1,18 +1,11 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LabAssist</title>
-</head>
-<body>
-    <main>
-        <h1>LabAssist</h1>
-        <p>A local application for recording and reviewing laboratory results.</p>
+{% extends "core/base.html" %}
 
-        <h2>Under Development</h2>
-        <p>Only the home page is available at this stage.</p>
-        <p>This application does not replace clinical judgment.</p>
-    </main>
-</body>
-</html>
+{% block title %}Home | LabAssist{% endblock %}
+
+{% block content %}
+    <h1>LabAssist</h1>
+    <p>A local application for recording and reviewing laboratory results.</p>
+
+    <h2>Under Development</h2>
+    <p>Only the home page is available at this stage.</p>
+{% endblock %}

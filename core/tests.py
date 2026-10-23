@@ -8,6 +8,7 @@ class HomePageTests(SimpleTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "core/home.html")
+        self.assertTemplateUsed(response, "core/base.html")
         self.assertContains(response, "<h1>LabAssist</h1>", html=True)
 
     def test_home_page_uses_english_and_ltr_direction(self):
