@@ -1,0 +1,98 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #f3f6fa;
+    color: #172b4d;
+    font-family: "Segoe UI", Arial, sans-serif;
+    line-height: 1.6;
+}
+
+.container {
+    width: min(1100px, 92%);
+    margin-inline: auto;
+}
+
+.site-header {
+    background: #ffffff;
+    border-bottom: 1px solid #dbe3ed;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-block: 18px;
+}
+
+.brand {
+    color: #174ea6;
+    font-size: 24px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+nav a {
+    color: #174ea6;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a:focus-visible {
+    outline: 3px solid #174ea6;
+    outline-offset: 4px;
+}
+
+.main-content {
+    padding-block: 40px;
+}
+
+.card {
+    padding: 28px;
+    background: #ffffff;
+    border: 1px solid #dbe3ed;
+    border-radius: 12px;
+}
+
+h1 {
+    margin-top: 0;
+}
+
+.subtitle {
+    color: #475569;
+}
+
+.status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #fff3cd;
+    color: #664d03;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.site-footer {
+    padding-block: 20px;
+    border-top: 1px solid #dbe3ed;
+    color: #475569;
+    font-size: 14px;
+}
+
+@media (max-width: 600px) {
+    .main-content {
+        padding-block: 24px;
+    }
+
+    .card {
+        padding: 20px;
+    }
+}
