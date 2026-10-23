@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# IDE
+.idea/
+
+# Local database
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Secrets
+.env
+.env.*
+
+# Local uploads, exports and backups
+media/
+exports/
+backups/
+
+# Logs
+*.log
+
+# Windows
+Thumbs.db
+Desktop.ini
