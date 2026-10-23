@@ -1,0 +1,22 @@
+{% extends "core/base.html" %}
+
+{% block title %}Sign In | LabAssist{% endblock %}
+
+{% block content %}
+    <section class="card" aria-labelledby="login-title">
+        <h1 id="login-title">Sign In</h1>
+        <p class="subtitle">Enter your local account credentials.</p>
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+
+            <button type="submit">Sign In</button>
+        </form>
+    </section>
+{% endblock %}

@@ -96,3 +96,32 @@ h1 {
         padding: 20px;
     }
 }
+nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+nav form {
+    margin: 0;
+}
+
+button {
+    padding: 10px 16px;
+    border: 1px solid #174ea6;
+    border-radius: 6px;
+    background: #174ea6;
+    color: #ffffff;
+    font: inherit;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #123d82;
+}
+
+button:focus-visible {
+    outline: 3px solid #174ea6;
+    outline-offset: 3px;
+}
