@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+
+{% block title %}Patients | LabAssist{% endblock %}
+
+{% block content %}
+    <section class="card" aria-labelledby="patients-title">
+        <h1 id="patients-title">Patients</h1>
+        <p class="subtitle">Patient records stored on this device.</p>
+
+        {% if patients %}
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Date of birth</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patient in patients %}
+                        <tr>
+                            <td>{{ patient.full_name }}</td>
+                            <td>
+                                {{ patient.date_of_birth|date:"Y-m-d"|default:"Not recorded" }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No patients have been added yet.</p>
+        {% endif %}
+    </section>
+{% endblock %}

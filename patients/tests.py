@@ -5,6 +5,7 @@ from django.utils import timezone
 from .models import Patient
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.contrib.auth.models import Permission
 
 
 
@@ -123,3 +124,58 @@ class PatientAdminTests(TestCase):
             Patient.objects.filter(full_name="Invalid Test Patient").exists()
         )
 
+class PatientListViewTests(TestCase):
+    def setUp(self):
+        self.url = reverse("patients:list")
+        self.user = get_user_model().objects.create_user(
+            username="patientviewer",
+            password="test-only-password-482!",
+        )
+
+    def grant_view_permission(self):
+        permission = Permission.objects.get(
+            content_type__app_label="patients",
+            content_type__model="patient",
+            codename="view_patient",
+        )
+        self.user.user_permissions.add(permission)
+
+    def test_anonymous_user_is_redirected_to_login(self):
+        response = self.client.get(self.url)
+
+        expected_url = f"{reverse('login')}?next={self.url}"
+        self.assertRedirects(response, expected_url)
+
+    def test_user_without_permission_is_denied(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_user_with_permission_can_view_empty_list(self):
+        self.grant_view_permission()
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "patients/patient_list.html")
+        self.assertContains(response, "No patients have been added yet.")
+
+    def test_user_with_permission_can_view_patient(self):
+        from .models import Patient
+
+        Patient.objects.create(full_name="Synthetic Patient")
+        self.grant_view_permission()
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Synthetic Patient")
+        self.assertContains(response, "Not recorded")
+        self.assertNotContains(
+            response,
+            "No patients have been added yet.",
+        )
