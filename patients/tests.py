@@ -6,6 +6,9 @@ from .models import Patient
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.contrib.auth.models import Permission
+from .forms import PatientForm
+
+
 
 
 
@@ -91,6 +94,7 @@ class PatientAdminTests(TestCase):
             {
                 "full_name": "New Test Patient",
                 "date_of_birth": "",
+                "sex_assigned_at_birth": "unknown",
                 "_save": "Save",
             },
         )
@@ -179,3 +183,146 @@ class PatientListViewTests(TestCase):
             response,
             "No patients have been added yet.",
         )
+class PatientFormTests(TestCase):
+    def test_valid_form_saves_patient(self):
+        form = PatientForm(
+            data={
+                "full_name": "  Synthetic Patient  ",
+                "date_of_birth": "",
+                "sex_assigned_at_birth": "unknown",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+        patient = form.save()
+
+        self.assertEqual(patient.full_name, "Synthetic Patient")
+        self.assertIsNone(patient.date_of_birth)
+        self.assertEqual(patient.sex_assigned_at_birth, "unknown")
+
+    def test_whitespace_only_name_is_rejected(self):
+        form = PatientForm(
+            data={
+                "full_name": "   ",
+                "date_of_birth": "",
+                "sex_assigned_at_birth": "unknown",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("full_name", form.errors)
+
+    def test_future_date_of_birth_is_rejected(self):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        tomorrow = timezone.localdate() + timedelta(days=1)
+
+        form = PatientForm(
+            data={
+                "full_name": "Synthetic Patient",
+                "date_of_birth": tomorrow.isoformat(),
+                "sex_assigned_at_birth": "unknown",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("date_of_birth", form.errors)
+
+    def test_invalid_sex_value_is_rejected(self):
+        form = PatientForm(
+            data={
+                "full_name": "Synthetic Patient",
+                "date_of_birth": "",
+                "sex_assigned_at_birth": "invalid",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("sex_assigned_at_birth", form.errors)
+
+class PatientCreateViewTests(TestCase):
+    def setUp(self):
+        self.url = reverse("patients:create")
+        self.user = get_user_model().objects.create_user(
+            username="patientcreator",
+            password="test-only-password-482!",
+        )
+        self.data = {
+            "full_name": "Synthetic New Patient",
+            "date_of_birth": "",
+            "sex_assigned_at_birth": "unknown",
+        }
+
+    def grant_permissions(self, *codenames):
+        permissions = Permission.objects.filter(
+            content_type__app_label="patients",
+            content_type__model="patient",
+            codename__in=codenames,
+        )
+        self.user.user_permissions.add(*permissions)
+
+    def test_anonymous_user_cannot_create_patient(self):
+        response = self.client.post(self.url, self.data)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={self.url}",
+        )
+        self.assertEqual(Patient.objects.count(), 0)
+
+    def test_view_permission_alone_cannot_create_patient(self):
+        self.grant_permissions("view_patient")
+        self.client.force_login(self.user)
+
+        response = self.client.post(self.url, self.data)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Patient.objects.count(), 0)
+
+    def test_add_permission_alone_cannot_create_patient(self):
+        self.grant_permissions("add_patient")
+        self.client.force_login(self.user)
+
+        response = self.client.post(self.url, self.data)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Patient.objects.count(), 0)
+
+    def test_authorized_user_can_open_form(self):
+        self.grant_permissions("view_patient", "add_patient")
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "patients/patient_form.html")
+        self.assertContains(response, "Save Patient")
+        self.assertEqual(Patient.objects.count(), 0)
+
+    def test_authorized_user_can_create_patient(self):
+        self.grant_permissions("view_patient", "add_patient")
+        self.client.force_login(self.user)
+
+        response = self.client.post(self.url, self.data)
+
+        self.assertRedirects(response, reverse("patients:list"))
+        self.assertEqual(Patient.objects.count(), 1)
+
+        patient = Patient.objects.get()
+        self.assertEqual(patient.full_name, "Synthetic New Patient")
+        self.assertIsNone(patient.date_of_birth)
+        self.assertEqual(patient.sex_assigned_at_birth, "unknown")
+
+    def test_invalid_form_does_not_create_patient(self):
+        self.grant_permissions("view_patient", "add_patient")
+        self.client.force_login(self.user)
+        self.data["full_name"] = ""
+
+        response = self.client.post(self.url, self.data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "patients/patient_form.html")
+        self.assertIn("full_name", response.context["form"].errors)
+        self.assertEqual(Patient.objects.count(), 0)

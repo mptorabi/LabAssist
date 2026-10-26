@@ -1,5 +1,7 @@
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from .forms import PatientForm
+
 
 from .models import Patient
 
@@ -15,7 +17,24 @@ def patient_list(request):
         {"patients": patients},
     )
 
+@login_required
+@permission_required("patients.view_patient", raise_exception=True)
+@permission_required("patients.add_patient", raise_exception=True)
+def patient_create(request):
+    if request.method == "POST":
+        form = PatientForm(request.POST)
 
-from django.shortcuts import render
+        if form.is_valid():
+            form.save()
+            return redirect("patients:list")
+    else:
+        form = PatientForm()
+
+    return render(
+        request,
+        "patients/patient_form.html",
+        {"form": form},
+    )
+
 
 # Create your views here.

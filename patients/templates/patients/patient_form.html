@@ -1,0 +1,21 @@
+{% extends "core/base.html" %}
+
+{% block title %}Add Patient | LabAssist{% endblock %}
+
+{% block content %}
+    <section class="card" aria-labelledby="patient-form-title">
+        <h1 id="patient-form-title">Add Patient</h1>
+        <p class="subtitle">
+            Enter patient details. Use synthetic data during development.
+        </p>
+
+        <form method="post" action="{% url 'patients:create' %}">
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            <button type="submit">Save Patient</button>
+            <a href="{% url 'patients:list' %}">Cancel</a>
+        </form>
+    </section>
+{% endblock %}

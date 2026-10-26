@@ -9,7 +9,21 @@ def validate_birth_date(value):
 
 
 class Patient(models.Model):
+    class SexAssignedAtBirth(models.TextChoices):
+        UNKNOWN = "unknown", "Unknown / Not recorded"
+        FEMALE = "female", "Female"
+        MALE = "male", "Male"
+        INTERSEX = "intersex", "Intersex"
+
     full_name = models.CharField(max_length=200)
+
+    sex_assigned_at_birth = models.CharField(
+        max_length=10,
+        choices=SexAssignedAtBirth.choices,
+        default=SexAssignedAtBirth.UNKNOWN,
+        verbose_name="Sex assigned at birth",
+    )
+
 
     date_of_birth = models.DateField(
         null=True,

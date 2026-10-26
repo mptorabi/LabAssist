@@ -6,6 +6,11 @@
     <section class="card" aria-labelledby="patients-title">
         <h1 id="patients-title">Patients</h1>
         <p class="subtitle">Patient records stored on this device.</p>
+                {% if perms.patients.add_patient %}
+            <p>
+                <a href="{% url 'patients:create' %}">Add Patient</a>
+            </p>
+        {% endif %}
 
         {% if patients %}
             <table>
