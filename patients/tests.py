@@ -326,3 +326,92 @@ class PatientCreateViewTests(TestCase):
         self.assertTemplateUsed(response, "patients/patient_form.html")
         self.assertIn("full_name", response.context["form"].errors)
         self.assertEqual(Patient.objects.count(), 0)
+class PatientDetailViewTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="patientviewer",
+            password="test-only-password-482!",
+        )
+        self.patient = Patient.objects.create(
+            full_name="Synthetic Detail Patient",
+        )
+        self.url = reverse(
+            "patients:detail",
+            kwargs={"pk": self.patient.pk},
+        )
+
+    def grant_view_permission(self):
+        permission = Permission.objects.get(
+            content_type__app_label="patients",
+            content_type__model="patient",
+            codename="view_patient",
+        )
+        self.user.user_permissions.add(permission)
+
+    def test_anonymous_user_is_redirected_to_login(self):
+        response = self.client.get(self.url)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={self.url}",
+        )
+
+    def test_user_without_permission_is_denied(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertNotContains(
+            response,
+            self.patient.full_name,
+            status_code=403,
+        )
+
+    def test_authorized_user_can_view_patient(self):
+        self.grant_view_permission()
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "patients/patient_detail.html",
+        )
+        self.assertEqual(response.context["patient"], self.patient)
+        self.assertContains(response, self.patient.full_name)
+        self.assertContains(response, "Not recorded")
+        self.assertContains(response, "Unknown / Not recorded")
+
+    def test_recorded_date_and_sex_are_displayed(self):
+        from datetime import date
+
+        self.patient.date_of_birth = date(1990, 5, 12)
+        self.patient.sex_assigned_at_birth = "female"
+        self.patient.save()
+
+        self.grant_view_permission()
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "1990-05-12")
+        self.assertContains(response, "Female")
+
+    def test_missing_patient_returns_404(self):
+        self.grant_view_permission()
+        self.client.force_login(self.user)
+        self.patient.delete()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_patient_list_links_to_details(self):
+        self.grant_view_permission()
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("patients:list"))
+
+        self.assertContains(response, f'href="{self.url}"')

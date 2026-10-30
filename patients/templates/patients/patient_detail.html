@@ -1,0 +1,30 @@
+{% extends "core/base.html" %}
+
+{% block title %}Patient Details | LabAssist{% endblock %}
+
+{% block content %}
+    <section class="card" aria-labelledby="patient-detail-title">
+        <h1 id="patient-detail-title">Patient Details</h1>
+
+        <dl>
+            <dt>Full name</dt>
+            <dd>{{ patient.full_name }}</dd>
+
+            <dt>Date of birth</dt>
+            <dd>
+                {% if patient.date_of_birth %}
+                    {{ patient.date_of_birth|date:"Y-m-d" }}
+                {% else %}
+                    Not recorded
+                {% endif %}
+            </dd>
+
+            <dt>Sex assigned at birth</dt>
+            <dd>{{ patient.get_sex_assigned_at_birth_display }}</dd>
+        </dl>
+
+        <p>
+            <a href="{% url 'patients:list' %}">Back to Patients</a>
+        </p>
+    </section>
+{% endblock %}

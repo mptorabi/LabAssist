@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from .forms import PatientForm
 
 
@@ -36,5 +36,15 @@ def patient_create(request):
         {"form": form},
     )
 
+@login_required
+@permission_required("patients.view_patient", raise_exception=True)
+def patient_detail(request, pk):
+    patient = get_object_or_404(Patient, pk=pk)
+
+    return render(
+        request,
+        "patients/patient_detail.html",
+        {"patient": patient},
+    )
 
 # Create your views here.
