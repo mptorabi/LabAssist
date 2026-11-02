@@ -226,3 +226,7 @@ class LabResultModelTests(TestCase):
         self.assertTrue(
             LabResult.objects.filter(pk=result.pk).exists()
         )
+
+class LabResultAdminTests(TestCase):
+    def test_lab_result_is_registered_in_admin(self):
+        self.assertTrue(admin.site.is_registered(LabResult))
