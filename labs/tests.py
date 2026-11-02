@@ -496,3 +496,224 @@ class LabResultCreateViewTests(TestCase):
                 self.assertEqual(response.status_code, 404)
                 self.assertEqual(LabResult.objects.count(), 0)
 
+class LabResultReportViewTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.models import Permission
+        from django.urls import reverse
+        from django.utils import timezone
+        from patients.models import Patient
+        from labs.models import LabTest, LabResult
+
+        self.user = get_user_model().objects.create_user(
+            username="syntheticreportviewer",
+        )
+
+        for app_label, model, codename in (
+            ("patients", "patient", "view_patient"),
+            ("labs", "labresult", "view_labresult"),
+        ):
+            self.user.user_permissions.add(
+                Permission.objects.get(
+                    content_type__app_label=app_label,
+                    content_type__model=model,
+                    codename=codename,
+                )
+            )
+
+        self.patient = Patient.objects.create(
+            full_name="Synthetic Report Patient",
+        )
+        self.other_patient = Patient.objects.create(
+            full_name="Synthetic Other Report Patient",
+        )
+        self.lab_test = LabTest.objects.create(
+            code="SYNTH_REPORT",
+            name="Synthetic Report Test",
+        )
+        self.result = LabResult.objects.create(
+            patient=self.patient,
+            lab_test=self.lab_test,
+            test_date=timezone.localdate(),
+            value="<0.01",
+            unit="synthetic-unit",
+            reference_range="synthetic-range",
+            notes="Synthetic first line.\nSynthetic second line.",
+        )
+
+        self.url = reverse(
+            "labs:result_report",
+            kwargs={
+                "patient_pk": self.patient.pk,
+                "result_pk": self.result.pk,
+            },
+        )
+        self.client.force_login(self.user)
+
+    def test_authorized_user_can_view_recorded_result_report(self):
+        from django.urls import reverse
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "labs/lab_result_report.html",
+        )
+        self.assertEqual(response.context["patient"], self.patient)
+        self.assertEqual(response.context["result"], self.result)
+
+        for text in (
+            self.patient.full_name,
+            self.lab_test.name,
+            self.lab_test.code,
+            self.result.test_date.isoformat(),
+            "&lt;0.01",
+            "synthetic-unit",
+            "synthetic-range",
+            "Synthetic first line.<br>Synthetic second line.",
+            "No automated clinical interpretation has been performed.",
+        ):
+            with self.subTest(text=text):
+                self.assertContains(response, text)
+
+        self.assertNotContains(
+            response,
+            "No unit is recorded for this result.",
+        )
+        self.assertNotContains(
+            response,
+            "No reference range is recorded for this result.",
+        )
+
+        history_url = reverse(
+            "patients:lab_history",
+            kwargs={
+                "pk": self.patient.pk,
+                "lab_test_pk": self.lab_test.pk,
+            },
+        )
+        patient_url = reverse(
+            "patients:detail",
+            kwargs={"pk": self.patient.pk},
+        )
+        self.assertContains(response, f'href="{history_url}"')
+        self.assertContains(response, f'href="{patient_url}"')
+
+    def test_missing_optional_data_is_explicitly_reported(self):
+        self.result.unit = ""
+        self.result.reference_range = ""
+        self.result.notes = ""
+        self.result.save()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Not recorded")
+        self.assertContains(
+            response,
+            "No unit is recorded for this result.",
+        )
+        self.assertContains(
+            response,
+            "No reference range is recorded for this result.",
+        )
+        self.assertEqual(response.context["result"].unit, "")
+        self.assertEqual(response.context["result"].reference_range, "")
+
+    def test_result_under_another_patient_url_returns_404(self):
+        from django.urls import reverse
+
+        wrong_patient_url = reverse(
+            "labs:result_report",
+            kwargs={
+                "patient_pk": self.other_patient.pk,
+                "result_pk": self.result.pk,
+            },
+        )
+
+        response = self.client.get(wrong_patient_url)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertNotContains(
+            response,
+            self.patient.full_name,
+            status_code=404,
+        )
+        self.assertNotContains(
+            response,
+            "Synthetic first line.",
+            status_code=404,
+        )
+
+    def test_anonymous_user_is_redirected_to_login(self):
+        from django.urls import reverse
+
+        self.client.logout()
+
+        response = self.client.get(self.url)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={self.url}",
+        )
+
+    def test_each_required_permission_is_enforced(self):
+        from django.contrib.auth.models import Permission
+
+        for app_label, model, codename in (
+            ("patients", "patient", "view_patient"),
+            ("labs", "labresult", "view_labresult"),
+        ):
+            permission = Permission.objects.get(
+                content_type__app_label=app_label,
+                content_type__model=model,
+                codename=codename,
+            )
+            self.user.user_permissions.remove(permission)
+
+            try:
+                with self.subTest(missing_permission=codename):
+                    response = self.client.get(self.url)
+
+                    self.assertEqual(response.status_code, 403)
+                    self.assertNotContains(
+                        response,
+                        self.patient.full_name,
+                        status_code=403,
+                    )
+                    self.assertNotContains(
+                        response,
+                        self.lab_test.name,
+                        status_code=403,
+                    )
+                    self.assertNotContains(
+                        response,
+                        "Synthetic first line.",
+                        status_code=403,
+                    )
+            finally:
+                self.user.user_permissions.add(permission)
+
+    def test_missing_result_returns_404(self):
+        self.result.delete()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_report_escapes_html_in_notes(self):
+        self.result.notes = (
+            "Synthetic note.\n"
+            "<script>alert('synthetic')</script>"
+        )
+        self.result.save()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Synthetic note.<br>")
+        self.assertContains(response, "&lt;script&gt;")
+        self.assertContains(response, "&lt;/script&gt;")
+        self.assertNotContains(response, "<script>")
+

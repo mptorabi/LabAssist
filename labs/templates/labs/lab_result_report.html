@@ -1,0 +1,91 @@
+{% extends "core/base.html" %}
+
+{% block title %}Lab Result Report | LabAssist{% endblock %}
+
+{% block content %}
+    <section class="card" aria-labelledby="result-report-title">
+        <h1 id="result-report-title">Lab Result Report</h1>
+
+        <p>
+            Recorded-data summary only.
+            No automated clinical interpretation has been performed.
+        </p>
+
+        <h2>Patient</h2>
+        <dl>
+            <dt>Full name</dt>
+            <dd>{{ patient.full_name }}</dd>
+
+            <dt>Patient ID</dt>
+            <dd>{{ patient.pk }}</dd>
+
+            <dt>Date of birth</dt>
+            <dd>
+                {% if patient.date_of_birth %}
+                    {{ patient.date_of_birth|date:"Y-m-d" }}
+                {% else %}
+                    Not recorded
+                {% endif %}
+            </dd>
+
+            <dt>Sex assigned at birth</dt>
+            <dd>{{ patient.get_sex_assigned_at_birth_display }}</dd>
+        </dl>
+
+        <h2>Recorded Result</h2>
+        <dl>
+            <dt>Result ID</dt>
+            <dd>{{ result.pk }}</dd>
+
+            <dt>Test</dt>
+            <dd>{{ result.lab_test.name }} ({{ result.lab_test.code }})</dd>
+
+            <dt>Test date</dt>
+            <dd>{{ result.test_date|date:"Y-m-d" }}</dd>
+
+            <dt>Reported value</dt>
+            <dd>{{ result.value }}</dd>
+
+            <dt>Unit</dt>
+            <dd>{{ result.unit|default:"Not recorded" }}</dd>
+
+            <dt>Reported reference range</dt>
+            <dd>{{ result.reference_range|default:"Not recorded" }}</dd>
+
+            <dt>Notes</dt>
+            <dd>{{ result.notes|default:"Not recorded"|linebreaksbr }}</dd>
+        </dl>
+
+        <h2>Limitations</h2>
+        <ul>
+            <li>
+                Values, units and reference ranges are displayed as entered.
+                They have not been independently verified.
+            </li>
+            {% if not result.unit %}
+                <li>No unit is recorded for this result.</li>
+            {% endif %}
+            {% if not result.reference_range %}
+                <li>No reference range is recorded for this result.</li>
+            {% endif %}
+            <li>
+                No normal or abnormal classification, diagnosis,
+                or treatment recommendation is provided.
+            </li>
+            <li>
+                This application does not replace clinical judgment.
+            </li>
+        </ul>
+
+        <p>
+            <a href="{% url 'patients:lab_history' patient.pk result.lab_test_id %}">
+                View Test History
+            </a>
+        </p>
+        <p>
+            <a href="{% url 'patients:detail' patient.pk %}">
+                Back to Patient
+            </a>
+        </p>
+    </section>
+{% endblock %}

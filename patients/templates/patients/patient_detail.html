@@ -33,7 +33,6 @@
 
         <h2>Lab Results</h2>
 
-
         {% if can_view_lab_results %}
             {% if lab_results %}
                 <table>
@@ -55,8 +54,12 @@
                                         {{ result.lab_test.name }}
                                     </a>
                                 </td>
-
-                                <td>{{ result.value }}</td>
+                                <td>
+                                    {{ result.value }}
+                                    <a href="{% url 'labs:result_report' patient.pk result.pk %}">
+                                        View Report
+                                    </a>
+                                </td>
                                 <td>{{ result.unit|default:"Not recorded" }}</td>
                                 <td>
                                     {{ result.reference_range|default:"Not recorded" }}
