@@ -230,3 +230,269 @@ class LabResultModelTests(TestCase):
 class LabResultAdminTests(TestCase):
     def test_lab_result_is_registered_in_admin(self):
         self.assertTrue(admin.site.is_registered(LabResult))
+
+class LabResultFormTests(TestCase):
+    def setUp(self):
+        from labs.models import LabTest
+
+        self.lab_test = LabTest.objects.create(
+            code="SYNTHETIC_FORM_TEST",
+            name="Synthetic Form Test",
+        )
+
+    def make_data(self, **changes):
+        from django.utils import timezone
+
+        data = {
+            "lab_test": str(self.lab_test.pk),
+            "test_date": timezone.localdate().isoformat(),
+            "value": "13.5",
+            "unit": "",
+            "reference_range": "",
+            "notes": "",
+        }
+        data.update(changes)
+        return data
+
+    def test_valid_form_allows_blank_optional_fields(self):
+        from labs.forms import LabResultForm
+
+        form = LabResultForm(data=self.make_data())
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["unit"], "")
+        self.assertEqual(form.cleaned_data["reference_range"], "")
+        self.assertEqual(form.cleaned_data["notes"], "")
+
+    def test_reported_values_remain_text(self):
+        from labs.forms import LabResultForm
+
+        for value in ("13.5", "Negative", "<0.01"):
+            with self.subTest(value=value):
+                form = LabResultForm(data=self.make_data(value=value))
+
+                self.assertTrue(form.is_valid(), form.errors)
+                self.assertEqual(form.cleaned_data["value"], value)
+                self.assertIsInstance(form.cleaned_data["value"], str)
+
+    def test_future_test_date_is_rejected(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from labs.forms import LabResultForm
+
+        tomorrow = timezone.localdate() + timedelta(days=1)
+        form = LabResultForm(
+            data=self.make_data(test_date=tomorrow.isoformat())
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("test_date", form.errors)
+
+    def test_required_fields_cannot_be_blank(self):
+        from labs.forms import LabResultForm
+
+        for field in ("lab_test", "test_date", "value"):
+            with self.subTest(field=field):
+                form = LabResultForm(
+                    data=self.make_data(**{field: ""})
+                )
+
+                self.assertFalse(form.is_valid())
+                self.assertIn(field, form.errors)
+
+    def test_whitespace_only_value_is_rejected(self):
+        from labs.forms import LabResultForm
+
+        form = LabResultForm(data=self.make_data(value="   "))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("value", form.errors)
+
+    def test_patient_is_not_an_editable_form_field(self):
+        from labs.forms import LabResultForm
+
+        form = LabResultForm()
+
+        self.assertNotIn("patient", form.fields)
+
+class LabResultCreateViewTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.models import Permission
+        from django.urls import reverse
+        from django.utils import timezone
+        from patients.models import Patient
+        from labs.models import LabTest
+
+        self.user = get_user_model().objects.create_user(
+            username="syntheticresultcreator",
+        )
+
+        for app_label, model, codename in (
+            ("patients", "patient", "view_patient"),
+            ("labs", "labresult", "view_labresult"),
+            ("labs", "labresult", "add_labresult"),
+        ):
+            self.user.user_permissions.add(
+                Permission.objects.get(
+                    content_type__app_label=app_label,
+                    content_type__model=model,
+                    codename=codename,
+                )
+            )
+
+        self.patient = Patient.objects.create(
+            full_name="Synthetic Form Patient",
+        )
+        self.other_patient = Patient.objects.create(
+            full_name="Synthetic Other Patient",
+        )
+        self.lab_test = LabTest.objects.create(
+            code="SYNTHETIC_CREATE_TEST",
+            name="Synthetic Create Test",
+        )
+        self.url = reverse(
+            "labs:result_create",
+            kwargs={"patient_pk": self.patient.pk},
+        )
+        self.data = {
+            "lab_test": str(self.lab_test.pk),
+            "test_date": timezone.localdate().isoformat(),
+            "value": "<0.01",
+            "unit": "",
+            "reference_range": "",
+            "notes": "Synthetic view test",
+        }
+
+    def test_authorized_user_can_open_form(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "labs/lab_result_form.html",
+        )
+        self.assertContains(response, "Reported value")
+        self.assertEqual(response.context["patient"], self.patient)
+
+    def test_valid_result_is_saved_for_patient_in_url(self):
+        from django.urls import reverse
+        from labs.models import LabResult
+
+        self.client.force_login(self.user)
+
+        # A submitted patient ID must not override the URL's patient.
+        self.data["patient"] = str(self.other_patient.pk)
+
+        response = self.client.post(self.url, self.data)
+
+        self.assertRedirects(
+            response,
+            reverse("patients:detail", kwargs={"pk": self.patient.pk}),
+        )
+        self.assertEqual(LabResult.objects.count(), 1)
+
+        result = LabResult.objects.get()
+        self.assertEqual(result.patient_id, self.patient.pk)
+        self.assertEqual(result.lab_test_id, self.lab_test.pk)
+        self.assertEqual(result.value, "<0.01")
+        self.assertEqual(result.unit, "")
+        self.assertEqual(result.reference_range, "")
+        self.assertEqual(result.notes, "Synthetic view test")
+
+    def test_future_date_does_not_save_result(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from labs.models import LabResult
+
+        self.client.force_login(self.user)
+        tomorrow = timezone.localdate() + timedelta(days=1)
+        self.data["test_date"] = tomorrow.isoformat()
+
+        response = self.client.post(self.url, self.data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "labs/lab_result_form.html",
+        )
+        self.assertIn("test_date", response.context["form"].errors)
+        self.assertEqual(LabResult.objects.count(), 0)
+
+    def test_anonymous_user_cannot_open_or_submit_form(self):
+        from django.urls import reverse
+        from labs.models import LabResult
+
+        for method in ("get", "post"):
+            with self.subTest(method=method):
+                if method == "get":
+                    response = self.client.get(self.url)
+                else:
+                    response = self.client.post(self.url, self.data)
+
+                self.assertRedirects(
+                    response,
+                    f"{reverse('login')}?next={self.url}",
+                )
+                self.assertEqual(LabResult.objects.count(), 0)
+
+    def test_each_required_permission_is_enforced(self):
+        from django.contrib.auth.models import Permission
+        from labs.models import LabResult
+
+        self.client.force_login(self.user)
+
+        for app_label, model, codename in (
+            ("patients", "patient", "view_patient"),
+            ("labs", "labresult", "view_labresult"),
+            ("labs", "labresult", "add_labresult"),
+        ):
+            permission = Permission.objects.get(
+                content_type__app_label=app_label,
+                content_type__model=model,
+                codename=codename,
+            )
+            self.user.user_permissions.remove(permission)
+
+            try:
+                for method in ("get", "post"):
+                    with self.subTest(
+                        missing_permission=codename,
+                        method=method,
+                    ):
+                        if method == "get":
+                            response = self.client.get(self.url)
+                        else:
+                            response = self.client.post(
+                                self.url,
+                                self.data,
+                            )
+
+                        self.assertEqual(response.status_code, 403)
+                        self.assertNotContains(
+                            response,
+                            self.patient.full_name,
+                            status_code=403,
+                        )
+                        self.assertEqual(LabResult.objects.count(), 0)
+            finally:
+                self.user.user_permissions.add(permission)
+
+    def test_missing_patient_returns_404_without_saving(self):
+        from labs.models import LabResult
+
+        self.client.force_login(self.user)
+        self.patient.delete()
+
+        for method in ("get", "post"):
+            with self.subTest(method=method):
+                if method == "get":
+                    response = self.client.get(self.url)
+                else:
+                    response = self.client.post(self.url, self.data)
+
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(LabResult.objects.count(), 0)
+

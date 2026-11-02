@@ -1,3 +1,40 @@
-from django.shortcuts import render
+from django.contrib.auth.decorators import login_required, permission_required
+from django.shortcuts import get_object_or_404, redirect, render
 
-# Create your views here.
+from patients.models import Patient
+
+from .forms import LabResultForm
+
+
+@login_required
+@permission_required(
+    (
+        "patients.view_patient",
+        "labs.view_labresult",
+        "labs.add_labresult",
+    ),
+    raise_exception=True,
+)
+def lab_result_create(request, patient_pk):
+    patient = get_object_or_404(Patient, pk=patient_pk)
+
+    if request.method == "POST":
+        form = LabResultForm(request.POST)
+
+        if form.is_valid():
+            result = form.save(commit=False)
+            result.patient = patient
+            result.save()
+
+            return redirect("patients:detail", pk=patient.pk)
+    else:
+        form = LabResultForm()
+
+    return render(
+        request,
+        "labs/lab_result_form.html",
+        {
+            "patient": patient,
+            "form": form,
+        },
+    )

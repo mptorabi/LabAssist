@@ -21,8 +21,18 @@
 
             <dt>Sex assigned at birth</dt>
             <dd>{{ patient.get_sex_assigned_at_birth_display }}</dd>
-        </dl>
-                <h2>Lab Results</h2>
+                </dl>
+
+        {% if perms.labs.view_labresult and perms.labs.add_labresult %}
+            <p>
+                <a href="{% url 'labs:result_create' patient.pk %}">
+                    Add Lab Result
+                </a>
+            </p>
+        {% endif %}
+
+        <h2>Lab Results</h2>
+
 
         {% if can_view_lab_results %}
             {% if lab_results %}

@@ -1,0 +1,29 @@
+{% extends "core/base.html" %}
+
+{% block title %}Add Lab Result{% endblock %}
+
+{% block content %}
+<h1>Add Lab Result</h1>
+
+<p>
+    Patient: {{ patient.full_name }} (ID: {{ patient.pk }})
+</p>
+
+<p>
+    Enter the result, unit, and reference range as reported by the laboratory.
+    Do not infer missing information.
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit">Save Lab Result</button>
+</form>
+
+<p>
+    <a href="{% url 'patients:detail' patient.pk %}">
+        Cancel and return to patient
+    </a>
+</p>
+{% endblock %}
