@@ -737,3 +737,97 @@ class PatientLabHistoryViewTests(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)
+
+    def test_history_displays_multiline_notes_as_escaped_text(self):
+        self.newer_result.notes = (
+            "Synthetic first line.\n"
+            "<script>alert('synthetic')</script>"
+        )
+        self.newer_result.save()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Synthetic first line.<br>",
+        )
+        self.assertContains(response, "&lt;script&gt;")
+        self.assertContains(response, "&lt;/script&gt;")
+        self.assertNotContains(response, "<script>")
+
+    def test_history_displays_placeholder_for_empty_notes(self):
+        from django.utils.html import escape
+
+        # Give other optional fields values so the placeholder
+        # specifically checks the empty Notes cell.
+        self.older_result.delete()
+        self.newer_result.unit = "synthetic-unit"
+        self.newer_result.reference_range = "synthetic-range"
+        self.newer_result.notes = ""
+        self.newer_result.save()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            (
+                "<tr>"
+                f"<td>{self.newer_result.test_date:%Y-%m-%d}</td>"
+                f"<td>{escape(self.newer_result.value)}</td>"
+                "<td>synthetic-unit</td>"
+                "<td>synthetic-range</td>"
+                "<td>Not recorded</td>"
+                "</tr>"
+            ),
+            html=True,
+        )
+
+    def test_same_test_date_orders_by_creation_time_newest_first(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from labs.models import LabResult
+
+        same_date = self.newer_result.test_date
+        now = timezone.now()
+
+        # Make the lower-PK result newer by creation time.
+        # This ensures the test checks created_at, not just PK.
+        LabResult.objects.filter(pk=self.older_result.pk).update(
+            test_date=same_date,
+            created_at=now,
+        )
+        LabResult.objects.filter(pk=self.newer_result.pk).update(
+            created_at=now - timedelta(hours=1),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [result.pk for result in response.context["lab_results"]],
+            [self.older_result.pk, self.newer_result.pk],
+        )
+
+    def test_same_date_and_creation_time_orders_by_pk_descending(self):
+        from django.utils import timezone
+        from labs.models import LabResult
+
+        LabResult.objects.filter(
+            pk__in=[self.older_result.pk, self.newer_result.pk],
+        ).update(
+            test_date=self.newer_result.test_date,
+            created_at=timezone.now(),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [result.pk for result in response.context["lab_results"]],
+            sorted(
+                [self.older_result.pk, self.newer_result.pk],
+                reverse=True,
+            ),
+        )

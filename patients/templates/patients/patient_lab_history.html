@@ -17,6 +17,7 @@
                         <th scope="col">Result</th>
                         <th scope="col">Unit</th>
                         <th scope="col">Reported reference range</th>
+                        <th scope="col">Notes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -28,9 +29,13 @@
                             <td>
                                 {{ result.reference_range|default:"Not recorded" }}
                             </td>
+                            <td>
+                                {{ result.notes|default:"Not recorded"|linebreaksbr }}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
+
             </table>
 
             <p>
