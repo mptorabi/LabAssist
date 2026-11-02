@@ -1,10 +1,33 @@
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect, render
 from .forms import PatientForm
-
-
+from labs.models import LabTest
 from .models import Patient
 
+
+@login_required
+@permission_required("patients.view_patient", raise_exception=True)
+@permission_required("labs.view_labresult", raise_exception=True)
+def patient_lab_history(request, pk, lab_test_pk):
+    patient = get_object_or_404(Patient, pk=pk)
+    lab_test = get_object_or_404(LabTest, pk=lab_test_pk)
+
+    lab_results = (
+        patient.lab_results
+        .filter(lab_test=lab_test)
+        .select_related("lab_test")
+        .order_by("-test_date", "-created_at", "-pk")
+    )
+
+    return render(
+        request,
+        "patients/patient_lab_history.html",
+        {
+            "patient": patient,
+            "lab_test": lab_test,
+            "lab_results": lab_results,
+        },
+    )
 
 @login_required
 @permission_required("patients.view_patient", raise_exception=True)

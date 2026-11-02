@@ -50,7 +50,12 @@
                         {% for result in lab_results %}
                             <tr>
                                 <td>{{ result.test_date|date:"Y-m-d" }}</td>
-                                <td>{{ result.lab_test.name }}</td>
+                                <td>
+                                    <a href="{% url 'patients:lab_history' patient.pk result.lab_test_id %}">
+                                        {{ result.lab_test.name }}
+                                    </a>
+                                </td>
+
                                 <td>{{ result.value }}</td>
                                 <td>{{ result.unit|default:"Not recorded" }}</td>
                                 <td>

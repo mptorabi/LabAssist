@@ -214,8 +214,6 @@ class PatientFormTests(TestCase):
         self.assertIn("full_name", form.errors)
 
     def test_future_date_of_birth_is_rejected(self):
-        from datetime import timedelta
-        from django.utils import timezone
 
         tomorrow = timezone.localdate() + timedelta(days=1)
 
@@ -420,7 +418,6 @@ class PatientDetailViewTests(TestCase):
 
 class PatientLabResultsViewTests(TestCase):
     def setUp(self):
-        from django.utils import timezone
         from labs.models import LabResult, LabTest
 
         self.user = get_user_model().objects.create_user(
@@ -528,3 +525,215 @@ class PatientLabResultsViewTests(TestCase):
             "FIRST-PATIENT-RESULT",
             status_code=403,
         )
+
+class PatientLabHistoryViewTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.models import Permission
+        from labs.models import LabTest, LabResult
+        from patients.models import Patient
+
+        self.user = get_user_model().objects.create_user(
+            username="synthetichistoryviewer",
+        )
+
+        for app_label, model, codename in (
+            ("patients", "patient", "view_patient"),
+            ("labs", "labresult", "view_labresult"),
+        ):
+            self.user.user_permissions.add(
+                Permission.objects.get(
+                    content_type__app_label=app_label,
+                    content_type__model=model,
+                    codename=codename,
+                )
+            )
+
+        self.patient = Patient.objects.create(
+            full_name="Synthetic History Patient",
+        )
+        self.other_patient = Patient.objects.create(
+            full_name="Synthetic Other Patient",
+        )
+        self.lab_test = LabTest.objects.create(
+            code="SYNTH_HISTORY",
+            name="Synthetic History Test",
+        )
+        self.other_test = LabTest.objects.create(
+            code="SYNTH_OTHER",
+            name="Synthetic Other Test",
+        )
+
+        today = timezone.localdate()
+
+        self.older_result = LabResult.objects.create(
+            patient=self.patient,
+            lab_test=self.lab_test,
+            test_date=today - timedelta(days=7),
+            value="<0.01",
+            unit="",
+            reference_range="",
+        )
+        self.newer_result = LabResult.objects.create(
+            patient=self.patient,
+            lab_test=self.lab_test,
+            test_date=today,
+            value="Negative",
+            unit="",
+            reference_range="",
+        )
+
+        self.url = reverse(
+            "patients:lab_history",
+            kwargs={
+                "pk": self.patient.pk,
+                "lab_test_pk": self.lab_test.pk,
+            },
+        )
+        self.client.force_login(self.user)
+
+    def test_history_only_includes_selected_patient_and_test(self):
+        from django.utils import timezone
+        from labs.models import LabResult
+
+        LabResult.objects.create(
+            patient=self.other_patient,
+            lab_test=self.lab_test,
+            test_date=timezone.localdate(),
+            value="OTHER_PATIENT_RESULT",
+        )
+        LabResult.objects.create(
+            patient=self.patient,
+            lab_test=self.other_test,
+            test_date=timezone.localdate(),
+            value="OTHER_TEST_RESULT",
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "patients/patient_lab_history.html",
+        )
+        self.assertEqual(response.context["patient"], self.patient)
+        self.assertEqual(response.context["lab_test"], self.lab_test)
+        self.assertCountEqual(
+            list(response.context["lab_results"]),
+            [self.older_result, self.newer_result],
+        )
+        self.assertNotContains(response, "OTHER_PATIENT_RESULT")
+        self.assertNotContains(response, "OTHER_TEST_RESULT")
+        self.assertNotContains(response, self.other_patient.full_name)
+
+    def test_history_is_newest_first_and_preserves_reported_values(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            list(response.context["lab_results"]),
+            [self.newer_result, self.older_result],
+        )
+        self.assertContains(response, "Negative")
+        self.assertContains(response, "&lt;0.01")
+        self.assertContains(response, "Not recorded")
+
+    def test_history_without_results_shows_empty_message(self):
+        from django.urls import reverse
+
+        url = reverse(
+            "patients:lab_history",
+            kwargs={
+                "pk": self.patient.pk,
+                "lab_test_pk": self.other_test.pk,
+            },
+        )
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["lab_results"]), [])
+        self.assertContains(
+            response,
+            "No results recorded for this test for this patient.",
+        )
+
+    def test_anonymous_user_is_redirected_to_login(self):
+        from django.urls import reverse
+
+        self.client.logout()
+
+        response = self.client.get(self.url)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={self.url}",
+        )
+
+    def test_each_required_permission_is_enforced(self):
+        from django.contrib.auth.models import Permission
+
+        for app_label, model, codename in (
+            ("patients", "patient", "view_patient"),
+            ("labs", "labresult", "view_labresult"),
+        ):
+            permission = Permission.objects.get(
+                content_type__app_label=app_label,
+                content_type__model=model,
+                codename=codename,
+            )
+            self.user.user_permissions.remove(permission)
+
+            try:
+                with self.subTest(missing_permission=codename):
+                    response = self.client.get(self.url)
+
+                    self.assertEqual(response.status_code, 403)
+                    self.assertNotContains(
+                        response,
+                        self.patient.full_name,
+                        status_code=403,
+                    )
+                    self.assertNotContains(
+                        response,
+                        self.lab_test.name,
+                        status_code=403,
+                    )
+            finally:
+                self.user.user_permissions.add(permission)
+
+    def test_missing_patient_returns_404(self):
+        from django.urls import reverse
+
+        missing_patient_pk = self.other_patient.pk
+        self.other_patient.delete()
+
+        url = reverse(
+            "patients:lab_history",
+            kwargs={
+                "pk": missing_patient_pk,
+                "lab_test_pk": self.lab_test.pk,
+            },
+        )
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_missing_lab_test_returns_404(self):
+        from django.urls import reverse
+
+        missing_test_pk = self.other_test.pk
+        self.other_test.delete()
+
+        url = reverse(
+            "patients:lab_history",
+            kwargs={
+                "pk": self.patient.pk,
+                "lab_test_pk": missing_test_pk,
+            },
+        )
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 404)

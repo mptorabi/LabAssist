@@ -1,0 +1,51 @@
+{% extends "core/base.html" %}
+
+{% block title %}Lab Test History | LabAssist{% endblock %}
+
+{% block content %}
+    <section class="card" aria-labelledby="lab-history-title">
+        <h1 id="lab-history-title">Lab Test History</h1>
+
+        <p>Patient: {{ patient.full_name }}</p>
+        <p>Test: {{ lab_test.name }} ({{ lab_test.code }})</p>
+
+        {% if lab_results %}
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Test date</th>
+                        <th scope="col">Result</th>
+                        <th scope="col">Unit</th>
+                        <th scope="col">Reported reference range</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in lab_results %}
+                        <tr>
+                            <td>{{ result.test_date|date:"Y-m-d" }}</td>
+                            <td>{{ result.value }}</td>
+                            <td>{{ result.unit|default:"Not recorded" }}</td>
+                            <td>
+                                {{ result.reference_range|default:"Not recorded" }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <p>
+                Results are shown as recorded, newest first.
+                Units and reference ranges may differ between reports.
+                No automated clinical interpretation is provided.
+            </p>
+        {% else %}
+            <p>No results recorded for this test for this patient.</p>
+        {% endif %}
+
+        <p>
+            <a href="{% url 'patients:detail' patient.pk %}">
+                Back to Patient
+            </a>
+        </p>
+    </section>
+{% endblock %}
