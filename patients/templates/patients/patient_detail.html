@@ -22,6 +22,46 @@
             <dt>Sex assigned at birth</dt>
             <dd>{{ patient.get_sex_assigned_at_birth_display }}</dd>
         </dl>
+                <h2>Lab Results</h2>
+
+        {% if can_view_lab_results %}
+            {% if lab_results %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">Test date</th>
+                            <th scope="col">Test</th>
+                            <th scope="col">Result</th>
+                            <th scope="col">Unit</th>
+                            <th scope="col">Reported reference range</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in lab_results %}
+                            <tr>
+                                <td>{{ result.test_date|date:"Y-m-d" }}</td>
+                                <td>{{ result.lab_test.name }}</td>
+                                <td>{{ result.value }}</td>
+                                <td>{{ result.unit|default:"Not recorded" }}</td>
+                                <td>
+                                    {{ result.reference_range|default:"Not recorded" }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <p>
+                    Results are shown as recorded, newest first.
+                    No automated clinical interpretation is provided.
+                </p>
+            {% else %}
+                <p>No lab results recorded for this patient.</p>
+            {% endif %}
+        {% else %}
+            <p>You do not have permission to view lab results.</p>
+        {% endif %}
+
 
         <p>
             <a href="{% url 'patients:list' %}">Back to Patients</a>

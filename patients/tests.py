@@ -326,6 +326,7 @@ class PatientCreateViewTests(TestCase):
         self.assertTemplateUsed(response, "patients/patient_form.html")
         self.assertIn("full_name", response.context["form"].errors)
         self.assertEqual(Patient.objects.count(), 0)
+
 class PatientDetailViewTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
@@ -415,3 +416,115 @@ class PatientDetailViewTests(TestCase):
         response = self.client.get(reverse("patients:list"))
 
         self.assertContains(response, f'href="{self.url}"')
+
+
+class PatientLabResultsViewTests(TestCase):
+    def setUp(self):
+        from django.utils import timezone
+        from labs.models import LabResult, LabTest
+
+        self.user = get_user_model().objects.create_user(
+            username="labresultsviewer",
+            password="test-only-password-482!",
+        )
+        self.user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="patients",
+                content_type__model="patient",
+                codename="view_patient",
+            )
+        )
+
+        self.patient = Patient.objects.create(
+            full_name="Synthetic First Patient",
+        )
+        self.other_patient = Patient.objects.create(
+            full_name="Synthetic Other Patient",
+        )
+        lab_test = LabTest.objects.create(
+            code="SYNTHETIC_TEST",
+            name="Synthetic Lab Test",
+        )
+
+        self.result = LabResult.objects.create(
+            patient=self.patient,
+            lab_test=lab_test,
+            test_date=timezone.localdate(),
+            value="FIRST-PATIENT-RESULT",
+        )
+        LabResult.objects.create(
+            patient=self.other_patient,
+            lab_test=lab_test,
+            test_date=timezone.localdate(),
+            value="OTHER-PATIENT-RESULT",
+        )
+
+        self.url = reverse(
+            "patients:detail",
+            kwargs={"pk": self.patient.pk},
+        )
+
+    def grant_lab_result_permission(self):
+        self.user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="labs",
+                content_type__model="labresult",
+                codename="view_labresult",
+            )
+        )
+
+    def test_user_without_lab_permission_cannot_see_results(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.patient.full_name)
+        self.assertContains(
+            response,
+            "You do not have permission to view lab results.",
+        )
+        self.assertNotContains(response, "FIRST-PATIENT-RESULT")
+        self.assertIsNone(response.context["lab_results"])
+
+    def test_authorized_user_sees_only_this_patients_results(self):
+        self.grant_lab_result_permission()
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "FIRST-PATIENT-RESULT")
+        self.assertNotContains(response, "OTHER-PATIENT-RESULT")
+        self.assertEqual(
+            list(response.context["lab_results"]),
+            [self.result],
+        )
+
+    def test_patient_without_results_shows_empty_message(self):
+        self.result.delete()
+        self.grant_lab_result_permission()
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "No lab results recorded for this patient.",
+        )
+        self.assertNotContains(response, "OTHER-PATIENT-RESULT")
+
+    def test_lab_permission_alone_does_not_allow_patient_access(self):
+        self.user.user_permissions.clear()
+        self.grant_lab_result_permission()
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertNotContains(
+            response,
+            "FIRST-PATIENT-RESULT",
+            status_code=403,
+        )

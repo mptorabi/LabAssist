@@ -41,10 +41,23 @@ def patient_create(request):
 def patient_detail(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
 
+    can_view_lab_results = request.user.has_perm("labs.view_labresult")
+    lab_results = None
+
+    if can_view_lab_results:
+        lab_results = (
+            patient.lab_results
+            .select_related("lab_test")
+            .order_by("-test_date", "-created_at", "-pk")
+        )
+
     return render(
         request,
         "patients/patient_detail.html",
-        {"patient": patient},
+        {
+            "patient": patient,
+            "can_view_lab_results": can_view_lab_results,
+            "lab_results": lab_results,
+        },
     )
 
-# Create your views here.
