@@ -87,6 +87,35 @@ class LabTestAlias(models.Model):
     def __str__(self):
         return f"{self.name} ({self.lab_test.code})"
 
+class LabTestUnit(models.Model):
+    lab_test = models.ForeignKey(
+        LabTest,
+        on_delete=models.CASCADE,
+        related_name="suggested_units",
+    )
+    symbol = models.CharField(
+        max_length=100,
+        help_text=(
+            "Suggested unit as displayed for entry, "
+            "for example: mg/dL. Not a conversion rule."
+        ),
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["symbol", "pk"]
+        verbose_name = "Lab test unit"
+        verbose_name_plural = "Lab test units"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["lab_test", "symbol"],
+                name="labs_unique_test_unit",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.symbol} ({self.lab_test.code})"
+
 class LabReport(models.Model):
     patient = models.ForeignKey(
         "patients.Patient",

@@ -8,6 +8,7 @@ from .models import (
     LabTest,
     LabTestAlias,
     LabTestCategory,
+    LabTestUnit
 )
 from django.contrib import admin
 from django.db.models.deletion import ProtectedError
@@ -1104,3 +1105,135 @@ class LabTestInputTypeModelTests(TestCase):
             lab_test.full_clean()
 
         self.assertIn("input_type", context.exception.message_dict)
+
+class LabTestUnitModelTests(TestCase):
+    def setUp(self):
+        self.lab_test = LabTest.objects.create(
+            code="UNIT_TEST_A",
+            name="Synthetic unit test A",
+        )
+
+    def test_unit_validates_and_saves(self):
+        unit = LabTestUnit(
+            lab_test=self.lab_test,
+            symbol="mg/dL",
+        )
+
+        unit.full_clean()
+        unit.save()
+        unit.refresh_from_db()
+
+        self.assertEqual(unit.symbol, "mg/dL")
+        self.assertEqual(unit.lab_test_id, self.lab_test.pk)
+
+    def test_unit_is_active_by_default(self):
+        unit = LabTestUnit.objects.create(
+            lab_test=self.lab_test,
+            symbol="mg/dL",
+        )
+
+        unit.refresh_from_db()
+
+        self.assertTrue(unit.is_active)
+
+    def test_string_representation(self):
+        unit = LabTestUnit(
+            lab_test=self.lab_test,
+            symbol="mg/dL",
+        )
+
+        self.assertEqual(str(unit), "mg/dL (UNIT_TEST_A)")
+
+    def test_multiple_units_are_allowed_for_one_test(self):
+        for symbol in ["mg/dL", "mmol/L"]:
+            LabTestUnit.objects.create(
+                lab_test=self.lab_test,
+                symbol=symbol,
+            )
+
+        self.assertEqual(self.lab_test.suggested_units.count(), 2)
+
+    def test_same_symbol_is_allowed_for_different_tests(self):
+        other_test = LabTest.objects.create(
+            code="UNIT_TEST_B",
+            name="Synthetic unit test B",
+        )
+        LabTestUnit.objects.create(
+            lab_test=self.lab_test,
+            symbol="mg/dL",
+        )
+        other_unit = LabTestUnit(
+            lab_test=other_test,
+            symbol="mg/dL",
+        )
+
+        other_unit.full_clean()
+        other_unit.save()
+
+        self.assertEqual(LabTestUnit.objects.count(), 2)
+
+    def test_duplicate_unit_is_rejected_by_validation(self):
+        LabTestUnit.objects.create(
+            lab_test=self.lab_test,
+            symbol="mg/dL",
+        )
+        duplicate = LabTestUnit(
+            lab_test=self.lab_test,
+            symbol="mg/dL",
+        )
+
+        with self.assertRaises(ValidationError):
+            duplicate.full_clean()
+
+    def test_duplicate_unit_is_rejected_by_database(self):
+        LabTestUnit.objects.create(
+            lab_test=self.lab_test,
+            symbol="mg/dL",
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                LabTestUnit.objects.create(
+                    lab_test=self.lab_test,
+                    symbol="mg/dL",
+                )
+
+        self.assertEqual(self.lab_test.suggested_units.count(), 1)
+
+    def test_blank_symbol_is_rejected_by_validation(self):
+        unit = LabTestUnit(
+            lab_test=self.lab_test,
+            symbol="",
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            unit.full_clean()
+
+        self.assertIn("symbol", context.exception.message_dict)
+
+    def test_unit_can_be_deactivated(self):
+        unit = LabTestUnit.objects.create(
+            lab_test=self.lab_test,
+            symbol="mg/dL",
+        )
+
+        unit.is_active = False
+        unit.full_clean()
+        unit.save()
+        unit.refresh_from_db()
+
+        self.assertFalse(unit.is_active)
+        self.assertEqual(self.lab_test.suggested_units.count(), 1)
+
+    def test_deleting_unused_test_deletes_its_suggested_units(self):
+        unit = LabTestUnit.objects.create(
+            lab_test=self.lab_test,
+            symbol="mg/dL",
+        )
+        unit_pk = unit.pk
+
+        self.lab_test.delete()
+
+        self.assertFalse(
+            LabTestUnit.objects.filter(pk=unit_pk).exists()
+        )
