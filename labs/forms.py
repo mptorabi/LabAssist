@@ -1,9 +1,28 @@
+from django.db.models import Q
+from .models import LabResult, LabTest
 from django import forms
-
 from .models import LabResult
 
 
 class LabResultForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        available_tests = LabTest.objects.filter(is_active=True)
+
+        # Keep the recorded test available when editing an existing result.
+        if self.instance.pk and self.instance.lab_test_id:
+            available_tests = LabTest.objects.filter(
+                Q(is_active=True) | Q(pk=self.instance.lab_test_id)
+            )
+
+        self.fields["lab_test"].queryset = available_tests.order_by(
+            "name", "code"
+        )
+
+        self.fields["lab_test"].queryset = available_tests.order_by(
+            "name", "code"
+        )
     class Meta:
         model = LabResult
         fields = [
