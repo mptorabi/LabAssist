@@ -1,6 +1,7 @@
+from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from .models import LabResult, LabTest
+from .models import LabReport, LabResult, LabTest
 from django.contrib import admin
 from django.db.models.deletion import ProtectedError
 from django.utils import timezone
@@ -492,7 +493,6 @@ class LabResultCreateViewTests(TestCase):
                     response = self.client.get(self.url)
                 else:
                     response = self.client.post(self.url, self.data)
-
                 self.assertEqual(response.status_code, 404)
                 self.assertEqual(LabResult.objects.count(), 0)
 
@@ -717,3 +717,155 @@ class LabResultReportViewTests(TestCase):
         self.assertContains(response, "&lt;/script&gt;")
         self.assertNotContains(response, "<script>")
 
+class LabReportModelTests(TestCase):
+    def setUp(self):
+        self.patient = Patient.objects.create(
+            full_name="Synthetic Report Patient",
+        )
+        self.other_patient = Patient.objects.create(
+            full_name="Synthetic Other Report Patient",
+        )
+        self.lab_test = LabTest.objects.create(
+            code="SYNTHETIC_REPORT_TEST",
+            name="Synthetic Report Test",
+        )
+
+    def make_result(self, report=None):
+        return LabResult(
+            patient=self.patient,
+            report=report,
+            lab_test=self.lab_test,
+            test_date=timezone.localdate(),
+            value="<0.01",
+        )
+
+    def test_report_allows_blank_optional_fields(self):
+        report = LabReport(patient=self.patient)
+
+        report.full_clean()
+        report.save()
+        report.refresh_from_db()
+
+        self.assertEqual(report.patient_id, self.patient.pk)
+        self.assertIsNone(report.report_date)
+        self.assertEqual(report.laboratory_name, "")
+        self.assertEqual(report.report_number, "")
+        self.assertEqual(report.notes, "")
+
+    def test_future_report_date_is_rejected(self):
+        report = LabReport(
+            patient=self.patient,
+            report_date=timezone.localdate() + timedelta(days=1),
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            report.full_clean()
+
+        self.assertIn("report_date", context.exception.message_dict)
+
+    def test_today_and_past_report_dates_are_allowed(self):
+        today = timezone.localdate()
+
+        for report_date in (today, today - timedelta(days=1)):
+            with self.subTest(report_date=report_date):
+                report = LabReport(
+                    patient=self.patient,
+                    report_date=report_date,
+                )
+
+                report.full_clean()
+                report.save()
+                report.refresh_from_db()
+
+                self.assertEqual(report.report_date, report_date)
+
+    def test_result_can_be_saved_without_report(self):
+        result = self.make_result()
+
+        result.full_clean()
+        result.save()
+        result.refresh_from_db()
+
+        self.assertIsNone(result.report_id)
+        self.assertEqual(result.patient_id, self.patient.pk)
+        self.assertEqual(result.value, "<0.01")
+
+    def test_result_accepts_report_for_same_patient(self):
+        report = LabReport.objects.create(patient=self.patient)
+        result = self.make_result(report=report)
+
+        result.full_clean()
+        result.save()
+        result.refresh_from_db()
+
+        self.assertEqual(result.report_id, report.pk)
+        self.assertEqual(list(report.results.all()), [result])
+
+    def test_result_rejects_report_for_different_patient(self):
+        report = LabReport.objects.create(patient=self.other_patient)
+        result = self.make_result(report=report)
+
+        with self.assertRaises(ValidationError) as context:
+            result.full_clean()
+
+        self.assertIn("report", context.exception.message_dict)
+
+    def test_report_with_result_cannot_be_deleted(self):
+        report = LabReport.objects.create(patient=self.patient)
+        result = self.make_result(report=report)
+        result.full_clean()
+        result.save()
+        report_pk = report.pk
+
+        with self.assertRaises(ProtectedError):
+            report.delete()
+
+        self.assertTrue(
+            LabReport.objects.filter(pk=report_pk).exists()
+        )
+        result.refresh_from_db()
+        self.assertEqual(result.report_id, report_pk)
+    def test_report_patient_change_is_rejected_when_results_exist(self):
+        report = LabReport.objects.create(patient=self.patient)
+        result = self.make_result(report=report)
+        result.full_clean()
+        result.save()
+
+        report.patient = self.other_patient
+
+        with self.assertRaises(ValidationError) as context:
+            report.full_clean()
+
+        self.assertIn("patient", context.exception.message_dict)
+
+        report.refresh_from_db()
+        result.refresh_from_db()
+        self.assertEqual(report.patient_id, self.patient.pk)
+        self.assertEqual(result.patient_id, self.patient.pk)
+
+    def test_report_patient_can_change_when_no_results_exist(self):
+        report = LabReport.objects.create(patient=self.patient)
+        report.patient = self.other_patient
+
+        report.full_clean()
+        report.save()
+        report.refresh_from_db()
+
+        self.assertEqual(report.patient_id, self.other_patient.pk)
+
+    def test_report_notes_can_change_when_results_exist(self):
+        report = LabReport.objects.create(patient=self.patient)
+        result = self.make_result(report=report)
+        result.full_clean()
+        result.save()
+
+        report.notes = "Updated synthetic report notes."
+        report.full_clean()
+        report.save()
+        report.refresh_from_db()
+
+        self.assertEqual(
+            report.notes,
+            "Updated synthetic report notes.",
+        )
+        self.assertEqual(report.patient_id, self.patient.pk)

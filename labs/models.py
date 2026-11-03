@@ -23,11 +23,92 @@ class LabTest(models.Model):
     def __str__(self):
         return f"{self.name} ({self.code})"
 
+class LabReport(models.Model):
+    patient = models.ForeignKey(
+        "patients.Patient",
+        on_delete=models.PROTECT,
+        related_name="lab_reports",
+    )
+    report_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Issue date printed on the laboratory report. "
+            "Leave blank if not provided."
+        ),
+    )
+    laboratory_name = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Laboratory name as printed on the report.",
+    )
+    report_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text=(
+            "Report identifier as printed. "
+            "It is not assumed to be globally unique."
+        ),
+    )
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        verbose_name = "Lab report"
+        verbose_name_plural = "Lab reports"
+
+    def clean(self):
+        super().clean()
+
+        errors = {}
+
+        if self.report_date and self.report_date > timezone.localdate():
+            errors["report_date"] = "Report date cannot be in the future."
+
+        if self.pk and self.patient_id:
+            has_results_for_other_patient = (
+                self.results
+                .exclude(patient_id=self.patient_id)
+                .exists()
+            )
+
+            if has_results_for_other_patient:
+                errors["patient"] = (
+                    "The report patient must match the patient "
+                    "of every linked result."
+                )
+
+        if errors:
+            raise ValidationError(errors)
+
+        if self.report_date and self.report_date > timezone.localdate():
+            raise ValidationError(
+                {"report_date": "Report date cannot be in the future."}
+            )
+
+    def __str__(self):
+        return f"Lab report #{self.pk} — Patient #{self.patient_id}"
+
+
+
 class LabResult(models.Model):
     patient = models.ForeignKey(
         "patients.Patient",
         on_delete=models.PROTECT,
         related_name="lab_results",
+    )
+    report = models.ForeignKey(
+        LabReport,
+        on_delete=models.PROTECT,
+        related_name="results",
+        null=True,
+        blank=True,
+        help_text=(
+            "Optional laboratory report containing this result. "
+            "The report must belong to the same patient."
+        ),
     )
     lab_test = models.ForeignKey(
         LabTest,
@@ -62,6 +143,29 @@ class LabResult(models.Model):
 
     def clean(self):
         super().clean()
+
+        errors = {}
+
+        if self.test_date and self.test_date > timezone.localdate():
+            errors["test_date"] = "Test date cannot be in the future."
+
+        if self.report_id and self.patient_id:
+            report_has_different_patient = (
+                LabReport.objects
+                .filter(pk=self.report_id)
+                .exclude(patient_id=self.patient_id)
+                .exists()
+            )
+
+            if report_has_different_patient:
+                errors["report"] = (
+                    "The selected report must belong to the same patient "
+                    "as this result."
+                )
+
+        if errors:
+            raise ValidationError(errors)
+
 
         if self.test_date and self.test_date > timezone.localdate():
             raise ValidationError(
