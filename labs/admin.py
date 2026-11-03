@@ -1,13 +1,50 @@
 from django.contrib import admin
-from .models import LabResult, LabTest
+
+from .models import (
+    LabResult,
+    LabTest,
+    LabTestAlias,
+    LabTestCategory,
+    LabTestUnit,
+)
 
 
-@admin.register(LabTest)
-class LabTestAdmin(admin.ModelAdmin):
+@admin.register(LabTestCategory)
+class LabTestCategoryAdmin(admin.ModelAdmin):
     list_display = ("code", "name", "is_active")
     search_fields = ("code", "name")
     list_filter = ("is_active",)
     ordering = ("name", "code")
+
+
+class LabTestAliasInline(admin.TabularInline):
+    model = LabTestAlias
+    fields = ("name",)
+    extra = 0
+
+
+class LabTestUnitInline(admin.TabularInline):
+    model = LabTestUnit
+    fields = ("symbol", "is_active")
+    extra = 0
+
+
+@admin.register(LabTest)
+class LabTestAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "name",
+        "category",
+        "input_type",
+        "is_active",
+    )
+    search_fields = ("code", "name", "aliases__name")
+    list_filter = ("category", "input_type", "is_active")
+    ordering = ("name", "code")
+    autocomplete_fields = ("category",)
+    list_select_related = ("category",)
+    inlines = (LabTestAliasInline, LabTestUnitInline)
+
 
 @admin.register(LabResult)
 class LabResultAdmin(admin.ModelAdmin):
