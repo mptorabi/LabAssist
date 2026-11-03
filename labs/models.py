@@ -20,6 +20,12 @@ class LabTestCategory(models.Model):
         return self.name
 
 class LabTest(models.Model):
+    class InputType(models.TextChoices):
+        TEXT = "text", "Free text"
+        NUMERIC = "numeric", "Numeric or comparison value"
+        QUALITATIVE = "qualitative", "Qualitative"
+        STRUCTURED = "structured", "Structured (text fallback)"
+
     code = models.CharField(
         max_length=50,
         unique=True,
@@ -36,6 +42,15 @@ class LabTest(models.Model):
         null=True,
         blank=True,
         help_text="Optional primary category used for browsing.",
+    )
+    input_type = models.CharField(
+        max_length=20,
+        choices=InputType.choices,
+        default=InputType.TEXT,
+        help_text=(
+            "Suggested input format for future entry forms. "
+            "Does not restrict or convert recorded result text."
+        ),
     )
     is_active = models.BooleanField(default=True)
 

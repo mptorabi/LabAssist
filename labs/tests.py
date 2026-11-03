@@ -1047,3 +1047,60 @@ class LabTestAliasModelTests(TestCase):
         self.assertFalse(
             LabTestAlias.objects.filter(pk=alias_pk).exists()
         )
+class LabTestInputTypeModelTests(TestCase):
+    def test_default_input_type_is_text(self):
+        lab_test = LabTest(
+            code="INPUT_DEFAULT",
+            name="Synthetic default test",
+        )
+
+        self.assertEqual(lab_test.input_type, LabTest.InputType.TEXT)
+
+    def test_default_input_type_is_saved(self):
+        lab_test = LabTest.objects.create(
+            code="INPUT_SAVED",
+            name="Synthetic saved test",
+        )
+
+        lab_test.refresh_from_db()
+
+        self.assertEqual(lab_test.input_type, "text")
+
+    def test_all_supported_input_types_validate_and_save(self):
+        for input_type in LabTest.InputType.values:
+            with self.subTest(input_type=input_type):
+                lab_test = LabTest(
+                    code=f"INPUT_{input_type.upper()}",
+                    name=f"Synthetic {input_type} test",
+                    input_type=input_type,
+                )
+
+                lab_test.full_clean()
+                lab_test.save()
+                lab_test.refresh_from_db()
+
+                self.assertEqual(lab_test.input_type, input_type)
+
+    def test_unknown_input_type_is_rejected_by_validation(self):
+        lab_test = LabTest(
+            code="INPUT_INVALID",
+            name="Synthetic invalid test",
+            input_type="unsupported",
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            lab_test.full_clean()
+
+        self.assertIn("input_type", context.exception.message_dict)
+
+    def test_blank_input_type_is_rejected_by_validation(self):
+        lab_test = LabTest(
+            code="INPUT_BLANK",
+            name="Synthetic blank test",
+            input_type="",
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            lab_test.full_clean()
+
+        self.assertIn("input_type", context.exception.message_dict)
