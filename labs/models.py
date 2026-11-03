@@ -2,6 +2,22 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+class LabTestCategory(models.Model):
+    code = models.SlugField(
+        max_length=50,
+        unique=True,
+        help_text="Stable local category code.",
+    )
+    name = models.CharField(max_length=200)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name", "code"]
+        verbose_name = "Lab test category"
+        verbose_name_plural = "Lab test categories"
+
+    def __str__(self):
+        return self.name
 
 class LabTest(models.Model):
     code = models.CharField(
@@ -13,6 +29,14 @@ class LabTest(models.Model):
         max_length=200,
         help_text="Test name, for example: Hemoglobin.",
     )
+    category = models.ForeignKey(
+        LabTestCategory,
+        on_delete=models.PROTECT,
+        related_name="lab_tests",
+        null=True,
+        blank=True,
+        help_text="Optional primary category used for browsing.",
+    )
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -22,6 +46,31 @@ class LabTest(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.code})"
+
+class LabTestAlias(models.Model):
+    lab_test = models.ForeignKey(
+        LabTest,
+        on_delete=models.CASCADE,
+        related_name="aliases",
+    )
+    name = models.CharField(
+        max_length=200,
+        help_text="Alternative name or abbreviation used for searching.",
+    )
+
+    class Meta:
+        ordering = ["name", "pk"]
+        verbose_name = "Lab test alias"
+        verbose_name_plural = "Lab test aliases"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["lab_test", "name"],
+                name="labs_unique_test_alias",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.lab_test.code})"
 
 class LabReport(models.Model):
     patient = models.ForeignKey(
@@ -82,11 +131,6 @@ class LabReport(models.Model):
 
         if errors:
             raise ValidationError(errors)
-
-        if self.report_date and self.report_date > timezone.localdate():
-            raise ValidationError(
-                {"report_date": "Report date cannot be in the future."}
-            )
 
     def __str__(self):
         return f"Lab report #{self.pk} — Patient #{self.patient_id}"
@@ -165,12 +209,6 @@ class LabResult(models.Model):
 
         if errors:
             raise ValidationError(errors)
-
-
-        if self.test_date and self.test_date > timezone.localdate():
-            raise ValidationError(
-                {"test_date": "Test date cannot be in the future."}
-            )
 
     def __str__(self):
         return (

@@ -1,7 +1,14 @@
+from django.db import IntegrityError, transaction
 from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from .models import LabReport, LabResult, LabTest
+from .models import (
+    LabReport,
+    LabResult,
+    LabTest,
+    LabTestAlias,
+    LabTestCategory,
+)
 from django.contrib import admin
 from django.db.models.deletion import ProtectedError
 from django.utils import timezone
@@ -869,3 +876,174 @@ class LabReportModelTests(TestCase):
             "Updated synthetic report notes.",
         )
         self.assertEqual(report.patient_id, self.patient.pk)
+class LabTestCategoryModelTests(TestCase):
+    def setUp(self):
+        self.category = LabTestCategory.objects.create(
+            code="synthetic-category",
+            name="Synthetic Category",
+        )
+
+    def test_category_string_and_active_default(self):
+        self.assertEqual(str(self.category), "Synthetic Category")
+        self.assertTrue(self.category.is_active)
+
+    def test_category_code_must_be_unique(self):
+        duplicate = LabTestCategory(
+            code=self.category.code,
+            name="Another Synthetic Category",
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            duplicate.full_clean()
+
+        self.assertIn("code", context.exception.message_dict)
+
+    def test_lab_test_can_be_saved_without_category(self):
+        lab_test = LabTest(
+            code="SYNTHETIC_UNCATEGORIZED",
+            name="Synthetic Uncategorized Test",
+        )
+
+        lab_test.full_clean()
+        lab_test.save()
+        lab_test.refresh_from_db()
+
+        self.assertIsNone(lab_test.category_id)
+
+    def test_lab_test_can_belong_to_category(self):
+        lab_test = LabTest(
+            code="SYNTHETIC_CATEGORIZED",
+            name="Synthetic Categorized Test",
+            category=self.category,
+        )
+
+        lab_test.full_clean()
+        lab_test.save()
+        lab_test.refresh_from_db()
+
+        self.assertEqual(lab_test.category_id, self.category.pk)
+        self.assertEqual(
+            list(self.category.lab_tests.all()),
+            [lab_test],
+        )
+
+    def test_category_with_lab_test_cannot_be_deleted(self):
+        lab_test = LabTest.objects.create(
+            code="SYNTHETIC_PROTECTED_CATEGORY",
+            name="Synthetic Protected Category Test",
+            category=self.category,
+        )
+        category_pk = self.category.pk
+
+        with self.assertRaises(ProtectedError):
+            self.category.delete()
+
+        self.assertTrue(
+            LabTestCategory.objects.filter(pk=category_pk).exists()
+        )
+        lab_test.refresh_from_db()
+        self.assertEqual(lab_test.category_id, category_pk)
+
+
+class LabTestAliasModelTests(TestCase):
+    def setUp(self):
+        self.lab_test = LabTest.objects.create(
+            code="SYNTHETIC_ALIAS_TEST",
+            name="Synthetic Alias Test",
+        )
+
+    def test_alias_is_saved_for_lab_test(self):
+        alias = LabTestAlias(
+            lab_test=self.lab_test,
+            name="Synthetic alternative name",
+        )
+
+        alias.full_clean()
+        alias.save()
+        alias.refresh_from_db()
+
+        self.assertEqual(alias.lab_test_id, self.lab_test.pk)
+        self.assertEqual(
+            list(self.lab_test.aliases.all()),
+            [alias],
+        )
+        self.assertEqual(
+            str(alias),
+            "Synthetic alternative name (SYNTHETIC_ALIAS_TEST)",
+        )
+
+    def test_alias_name_is_required(self):
+        alias = LabTestAlias(
+            lab_test=self.lab_test,
+            name="",
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            alias.full_clean()
+
+        self.assertIn("name", context.exception.message_dict)
+
+    def test_duplicate_alias_for_same_test_fails_validation(self):
+        LabTestAlias.objects.create(
+            lab_test=self.lab_test,
+            name="Synthetic shared alias",
+        )
+        duplicate = LabTestAlias(
+            lab_test=self.lab_test,
+            name="Synthetic shared alias",
+        )
+
+        with self.assertRaises(ValidationError):
+            duplicate.full_clean()
+
+    def test_duplicate_alias_for_same_test_is_blocked_by_database(self):
+        LabTestAlias.objects.create(
+            lab_test=self.lab_test,
+            name="Synthetic shared alias",
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                LabTestAlias.objects.create(
+                    lab_test=self.lab_test,
+                    name="Synthetic shared alias",
+                )
+
+        self.assertEqual(self.lab_test.aliases.count(), 1)
+
+    def test_same_alias_can_belong_to_different_tests(self):
+        other_test = LabTest.objects.create(
+            code="SYNTHETIC_OTHER_ALIAS_TEST",
+            name="Synthetic Other Alias Test",
+        )
+        LabTestAlias.objects.create(
+            lab_test=self.lab_test,
+            name="Synthetic shared alias",
+        )
+        other_alias = LabTestAlias(
+            lab_test=other_test,
+            name="Synthetic shared alias",
+        )
+
+        other_alias.full_clean()
+        other_alias.save()
+
+        self.assertEqual(
+            LabTestAlias.objects.filter(
+                name="Synthetic shared alias",
+            ).count(),
+            2,
+        )
+
+    def test_deleting_unused_lab_test_deletes_its_aliases(self):
+        alias = LabTestAlias.objects.create(
+            lab_test=self.lab_test,
+            name="Synthetic alternative name",
+        )
+        alias_pk = alias.pk
+
+        self.lab_test.delete()
+
+        self.assertFalse(
+            LabTestAlias.objects.filter(pk=alias_pk).exists()
+        )
