@@ -1,9 +1,10 @@
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect, render
-from patients.models import Patient
-from .forms import LabResultForm
-from .models import LabResult
 
+from patients.models import Patient
+
+from .forms import LabResultForm
+from .models import LabResult, LabTest
 
 
 @login_required
@@ -30,14 +31,36 @@ def lab_result_create(request, patient_pk):
     else:
         form = LabResultForm()
 
+    catalog_tests = (
+        LabTest.objects
+        .filter(is_active=True)
+        .prefetch_related("aliases")
+        .order_by("name", "code")
+    )
+
+    test_search_data = [
+        {
+            "id": str(test.pk),
+            "code": test.code,
+            "name": test.name,
+            "aliases": [
+                alias.name
+                for alias in test.aliases.all()
+            ],
+        }
+        for test in catalog_tests
+    ]
+
     return render(
         request,
         "labs/lab_result_form.html",
         {
             "patient": patient,
             "form": form,
+            "test_search_data": test_search_data,
         },
     )
+
 
 @login_required
 @permission_required(
