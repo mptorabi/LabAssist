@@ -1,0 +1,187 @@
+{% extends "core/base.html" %}
+
+{% block title %}New Lab Report{% endblock %}
+
+{% block content %}
+<h1>New Lab Report</h1>
+
+<p>
+    Patient: {{ patient.full_name }} (ID: {{ patient.pk }})
+</p>
+
+<p>
+    Enter information exactly as printed on the laboratory report.
+    Do not infer missing units or reference ranges.
+</p>
+
+{% if entry_error %}
+    <p role="alert">{{ entry_error }}</p>
+{% endif %}
+
+{% if not reviewing %}
+<section>
+    <h2>1. Select panels</h2>
+
+    <form method="get">
+        <fieldset>
+            <legend>Available entry presets</legend>
+
+            {% for panel in panels %}
+                <p>
+                    <label>
+                        <input
+                            type="checkbox"
+                            name="panels"
+                            value="{{ panel.code }}"
+                            {% if panel.code in selected_codes %}checked{% endif %}
+                        >
+                        {{ panel.name }}
+                    </label>
+                    {% if panel.description %}
+                        <br>{{ panel.description }}
+                    {% endif %}
+                </p>
+            {% empty %}
+                <p>No prepared panels are currently available.</p>
+            {% endfor %}
+        </fieldset>
+
+        <p>
+            Loading panels starts a new entry form.
+            Unsaved values will not be carried over.
+        </p>
+
+        <button type="submit">Load selected panels</button>
+    </form>
+</section>
+{% endif %}
+
+{% if header_form %}
+<form method="post">
+    {% csrf_token %}
+
+    {% for code in selected_codes %}
+        <input type="hidden" name="panels" value="{{ code }}">
+    {% endfor %}
+
+    {% if reviewing %}
+        <h2>Review before saving</h2>
+
+        <p>
+            Verify the patient, dates, results, units and reference ranges.
+            The entered data has not been independently verified.
+        </p>
+
+        <dl>
+            <dt>Laboratory</dt>
+            <dd>{{ header_form.cleaned_data.laboratory_name|default:"Not provided" }}</dd>
+
+            <dt>Report number</dt>
+            <dd>{{ header_form.cleaned_data.report_number|default:"Not provided" }}</dd>
+
+            <dt>Report issue date</dt>
+            <dd>{{ header_form.cleaned_data.report_date|date:"Y-m-d"|default:"Not provided" }}</dd>
+
+            <dt>Report notes</dt>
+            <dd>{{ header_form.cleaned_data.notes|default:"—"|linebreaksbr }}</dd>
+        </dl>
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Test</th>
+                        <th scope="col">Test date</th>
+                        <th scope="col">Result</th>
+                        <th scope="col">Unit</th>
+                        <th scope="col">Reference range</th>
+                        <th scope="col">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in review_rows %}
+                        <tr>
+                            <th scope="row">{{ row.lab_test }}</th>
+                            <td>{{ row.test_date|date:"Y-m-d" }}</td>
+                            <td style="white-space: pre-wrap;">{{ row.value }}</td>
+                            <td>{{ row.unit|default:"—" }}</td>
+                            <td>{{ row.reference_range|default:"—" }}</td>
+                            <td>{{ row.notes|default:"—"|linebreaksbr }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% for field in header_form %}
+            {{ field.as_hidden }}
+        {% endfor %}
+
+        {{ result_formset.management_form }}
+
+        {% for row_form in result_formset %}
+            {% for field in row_form %}
+                {{ field.as_hidden }}
+            {% endfor %}
+        {% endfor %}
+
+        <p>
+            <button type="submit" name="action" value="edit">
+                Back to editing
+            </button>
+            <button type="submit" name="action" value="save">
+                Confirm and save report
+            </button>
+        </p>
+    {% else %}
+        <h2>2. Report information</h2>
+
+        {{ header_form.as_p }}
+
+        <h2>3. Results</h2>
+
+        <p>
+            Complete only the tests present on your report.
+            Entirely blank rows will not be saved.
+        </p>
+
+        {{ result_formset.management_form }}
+        {{ result_formset.management_form.errors }}
+        {{ result_formset.non_form_errors }}
+
+        {% for row_form in result_formset %}
+            <fieldset>
+                <legend>{{ row_form.test_label }}</legend>
+
+                {{ row_form.non_field_errors }}
+                {{ row_form.lab_test }}
+                {{ row_form.lab_test.errors }}
+
+                {% for field in row_form.visible_fields %}
+                    <p>
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {{ field.errors }}
+                        {% if field.help_text %}
+                            <br><small>{{ field.help_text }}</small>
+                        {% endif %}
+                    </p>
+                {% endfor %}
+            </fieldset>
+        {% endfor %}
+
+        <p>
+            <button type="submit" name="action" value="review">
+                Review results
+            </button>
+        </p>
+    {% endif %}
+</form>
+{% endif %}
+
+<p>
+    <a href="{% url 'patients:detail' patient.pk %}">
+        Return to patient
+    </a>
+</p>
+{% endblock %}
