@@ -1,6 +1,8 @@
 from django.contrib import admin
 
 from .models import (
+    LabPanel,
+    LabPanelItem,
     LabResult,
     LabTest,
     LabTestAlias,
@@ -64,3 +66,42 @@ class LabResultAdmin(admin.ModelAdmin):
     autocomplete_fields = ("patient", "lab_test")
     list_select_related = ("patient", "lab_test")
     readonly_fields = ("created_at", "updated_at")
+
+class LabPanelItemInline(admin.TabularInline):
+    model = LabPanelItem
+    fields = ("lab_test", "position")
+    autocomplete_fields = ("lab_test",)
+    ordering = ("position", "pk")
+    extra = 0
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("lab_test")
+        )
+
+
+@admin.register(LabPanel)
+class LabPanelAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "name",
+        "version",
+        "is_active",
+        "updated_at",
+    )
+    search_fields = ("code", "name", "description")
+    list_filter = ("is_active",)
+    ordering = ("name", "code")
+    readonly_fields = ("created_at", "updated_at")
+    fields = (
+        "code",
+        "name",
+        "description",
+        "version",
+        "is_active",
+        "created_at",
+        "updated_at",
+    )
+    inlines = (LabPanelItemInline,)

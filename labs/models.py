@@ -116,6 +116,79 @@ class LabTestUnit(models.Model):
     def __str__(self):
         return f"{self.symbol} ({self.lab_test.code})"
 
+class LabPanel(models.Model):
+    code = models.SlugField(
+        max_length=50,
+        unique=True,
+        help_text="Stable local panel code.",
+    )
+    name = models.CharField(max_length=200)
+    description = models.TextField(
+        blank=True,
+        help_text=(
+            "Describe the scope of this entry preset. "
+            "A panel is not a recommendation to order tests."
+        ),
+    )
+    version = models.PositiveIntegerField(
+        default=1,
+        help_text=(
+            "Preset content version, starting at 1. "
+            "Managed manually; not an automatic revision history."
+        ),
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "code"]
+        verbose_name = "Lab panel"
+        verbose_name_plural = "Lab panels"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(version__gte=1),
+                name="labs_panel_version_gte_1",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
+class LabPanelItem(models.Model):
+    panel = models.ForeignKey(
+        LabPanel,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    lab_test = models.ForeignKey(
+        LabTest,
+        on_delete=models.PROTECT,
+        related_name="panel_items",
+    )
+    position = models.PositiveIntegerField(
+        default=0,
+        help_text=(
+            "Display order within the panel. "
+            "Lower values appear first."
+        ),
+    )
+
+    class Meta:
+        ordering = ["position", "pk"]
+        verbose_name = "Lab panel item"
+        verbose_name_plural = "Lab panel items"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["panel", "lab_test"],
+                name="labs_unique_panel_test",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.panel.code}: {self.lab_test.code}"
+
 class LabReport(models.Model):
     patient = models.ForeignKey(
         "patients.Patient",
