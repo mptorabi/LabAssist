@@ -5,7 +5,13 @@ from django.urls import reverse
 
 from patients.models import Patient
 
-from .models import LabResult, LabTest, LabTestAlias, LabTestUnit
+from .models import (
+    LabResult,
+    LabTest,
+    LabTestAlias,
+    LabTestCategory,
+    LabTestUnit,
+)
 
 
 class LabResultCatalogSearchTests(TestCase):
@@ -68,6 +74,8 @@ class LabResultCatalogSearchTests(TestCase):
                     "id": str(self.active_test.pk),
                     "code": "SEARCH_ACTIVE",
                     "name": "Synthetic active search test",
+                    "category_id": "",
+                    "category_name": "",
                     "aliases": ["SyntheticLookup"],
                     "units": [],
                 },
@@ -182,4 +190,62 @@ class LabResultCatalogSearchTests(TestCase):
         self.assertEqual(
             tests_by_id[str(other_test.pk)]["units"],
             ["mmol/L"],
+        )
+    def test_search_data_contains_test_category(self):
+        category = LabTestCategory.objects.create(
+            code="synthetic-category",
+            name="Synthetic category",
+        )
+        self.active_test.category = category
+        self.active_test.save(update_fields=["category"])
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        tests_by_id = {
+            item["id"]: item
+            for item in response.context["test_search_data"]
+        }
+        test_data = tests_by_id[str(self.active_test.pk)]
+
+        self.assertEqual(
+            test_data["category_id"],
+            str(category.pk),
+        )
+        self.assertEqual(
+            test_data["category_name"],
+            "Synthetic category",
+        )
+
+    def test_active_test_in_inactive_category_remains_available(self):
+        category = LabTestCategory.objects.create(
+            code="inactive-category",
+            name="Inactive synthetic category",
+            is_active=False,
+        )
+        self.active_test.category = category
+        self.active_test.save(update_fields=["category"])
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        tests_by_id = {
+            item["id"]: item
+            for item in response.context["test_search_data"]
+        }
+
+        self.assertIn(str(self.active_test.pk), tests_by_id)
+        self.assertEqual(
+            tests_by_id[str(self.active_test.pk)]["category_id"],
+            str(category.pk),
+        )
+        self.assertEqual(
+            tests_by_id[str(self.active_test.pk)]["category_name"],
+            category.name,
+        )
+        self.assertIn(
+            self.active_test,
+            response.context["form"].fields["lab_test"].queryset,
         )

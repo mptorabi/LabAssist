@@ -35,6 +35,7 @@ def lab_result_create(request, patient_pk):
         LabTest.objects
         .filter(is_active=True)
         .prefetch_related("aliases", "suggested_units")
+        .select_related("category")
         .order_by("name", "code")
     )
 
@@ -43,6 +44,16 @@ def lab_result_create(request, patient_pk):
             "id": str(test.pk),
             "code": test.code,
             "name": test.name,
+            "category_id": (
+                str(test.category_id)
+                if test.category_id is not None
+                else ""
+            ),
+            "category_name": (
+                test.category.name
+                if test.category_id is not None
+                else ""
+            ),
             "aliases": [
                 alias.name
                 for alias in test.aliases.all()

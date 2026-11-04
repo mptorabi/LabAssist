@@ -6,9 +6,12 @@
     const status = document.getElementById("lab-test-search-status");
     const select = document.getElementById("id_lab_test");
     const dataElement = document.getElementById("lab-test-search-data");
+    const categorySelect = document.getElementById("lab-test-category");
 
-    if (!panel || !input || !status || !select || !dataElement) {
-        return;
+    if (
+        !panel || !input || !status || !select
+        || !dataElement || !categorySelect
+    ) {
     }
 
     let catalog;
@@ -27,7 +30,32 @@
             normalize([test.code, test.name, ...test.aliases].join(" ")),
         ])
     );
+        const categoryByTestId = new Map(
+        catalog.map((test) => [
+            String(test.id),
+            String(test.category_id ?? ""),
+        ])
+    );
 
+    const categoriesById = new Map();
+
+    for (const test of catalog) {
+        const categoryId = String(test.category_id ?? "");
+
+        if (categoryId !== "") {
+            categoriesById.set(categoryId, test.category_name);
+        }
+    }
+
+    const sortedCategories = Array.from(categoriesById.entries())
+        .sort((a, b) => a[1].localeCompare(b[1], "en"));
+
+    for (const [id, name] of sortedCategories) {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = name;
+        categorySelect.appendChild(option);
+    }
     const originalOptions = Array.from(select.options, (option) => ({
         value: option.value,
         label: option.textContent,
@@ -47,7 +75,18 @@
             const searchText = searchTextById.get(option.value)
                 ?? normalize(option.label);
 
+            const categoryId = categoryByTestId.get(option.value) ?? "";
+            const selectedCategory = categorySelect.value;
+
+            const matchesCategory = selectedCategory === ""
+                || (
+                    selectedCategory === "uncategorized"
+                        ? categoryId === ""
+                        : categoryId === selectedCategory
+                );
+
             const matches = !isPlaceholder
+                && matchesCategory
                 && terms.every((term) => searchText.includes(term));
 
             const isSelected = option.value === selectedValue;
@@ -83,6 +122,7 @@
     }
 
     input.addEventListener("input", updateOptions);
+    categorySelect.addEventListener("change", updateOptions);
     select.addEventListener("change", updateOptions);
 
     // Prevent Enter in the search box from submitting any surrounding form.
