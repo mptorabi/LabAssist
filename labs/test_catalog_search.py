@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from patients.models import Patient
 
-from .models import LabResult, LabTest, LabTestAlias
+from .models import LabResult, LabTest, LabTestAlias, LabTestUnit
 
 
 class LabResultCatalogSearchTests(TestCase):
@@ -69,6 +69,7 @@ class LabResultCatalogSearchTests(TestCase):
                     "code": "SEARCH_ACTIVE",
                     "name": "Synthetic active search test",
                     "aliases": ["SyntheticLookup"],
+                    "units": [],
                 },
             ],
         )
@@ -124,3 +125,61 @@ class LabResultCatalogSearchTests(TestCase):
             [str(self.active_test.pk)],
         )
         self.assertEqual(LabResult.objects.count(), 0)
+    def test_search_data_contains_only_active_units(self):
+        LabTestUnit.objects.create(
+            lab_test=self.active_test,
+            symbol="mg/dL",
+            is_active=True,
+        )
+        LabTestUnit.objects.create(
+            lab_test=self.active_test,
+            symbol="inactive-unit",
+            is_active=False,
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        tests_by_id = {
+            item["id"]: item
+            for item in response.context["test_search_data"]
+        }
+
+        self.assertEqual(
+            tests_by_id[str(self.active_test.pk)]["units"],
+            ["mg/dL"],
+        )
+
+    def test_suggested_units_are_scoped_to_each_test(self):
+        other_test = LabTest.objects.create(
+            code="SEARCH_OTHER",
+            name="Synthetic other search test",
+            is_active=True,
+        )
+        LabTestUnit.objects.create(
+            lab_test=self.active_test,
+            symbol="mg/dL",
+        )
+        LabTestUnit.objects.create(
+            lab_test=other_test,
+            symbol="mmol/L",
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        tests_by_id = {
+            item["id"]: item
+            for item in response.context["test_search_data"]
+        }
+
+        self.assertEqual(
+            tests_by_id[str(self.active_test.pk)]["units"],
+            ["mg/dL"],
+        )
+        self.assertEqual(
+            tests_by_id[str(other_test.pk)]["units"],
+            ["mmol/L"],
+        )

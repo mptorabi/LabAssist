@@ -34,7 +34,7 @@ def lab_result_create(request, patient_pk):
     catalog_tests = (
         LabTest.objects
         .filter(is_active=True)
-        .prefetch_related("aliases")
+        .prefetch_related("aliases", "suggested_units")
         .order_by("name", "code")
     )
 
@@ -46,6 +46,11 @@ def lab_result_create(request, patient_pk):
             "aliases": [
                 alias.name
                 for alias in test.aliases.all()
+            ],
+            "units": [
+                unit.symbol
+                for unit in test.suggested_units.all()
+                if unit.is_active
             ],
         }
         for test in catalog_tests

@@ -92,6 +92,81 @@
         }
     });
 
+    const unitInput = document.getElementById("id_unit");
+
+    if (unitInput) {
+        const unitsByTestId = new Map(
+            catalog.map((test) => [
+                String(test.id),
+                test.units ?? [],
+            ])
+        );
+
+        const unitSuggestions = document.createElement("datalist");
+        unitSuggestions.id = "lab-unit-suggestions";
+
+        const unitHelp = document.createElement("p");
+        unitHelp.id = "lab-unit-suggestions-help";
+        unitHelp.setAttribute("role", "status");
+        unitHelp.setAttribute("aria-live", "polite");
+
+        unitInput.setAttribute("list", unitSuggestions.id);
+        unitInput.setAttribute("autocomplete", "off");
+
+        const describedBy = [
+            unitInput.getAttribute("aria-describedby"),
+            unitHelp.id,
+        ].filter(Boolean).join(" ");
+
+        unitInput.setAttribute("aria-describedby", describedBy);
+
+        const unitContainer = unitInput.closest("p") ?? unitInput;
+        unitContainer.after(unitSuggestions, unitHelp);
+
+        function updateUnitSuggestions(testChanged = false) {
+            const units = unitsByTestId.get(select.value) ?? [];
+            const fragment = document.createDocumentFragment();
+
+            for (const symbol of units) {
+                const option = document.createElement("option");
+                option.value = symbol;
+                fragment.appendChild(option);
+            }
+
+            unitSuggestions.replaceChildren(fragment);
+
+            let message;
+
+            if (!select.value) {
+                message = "Select a lab test to see suggested units.";
+            } else if (units.length === 0) {
+                message = "No suggested units are available for this test.";
+            } else {
+                message = `Suggested units: ${units.join(", ")}.`;
+            }
+
+            message += (
+                " Use only the unit printed on the report. "
+                + "You may enter another unit or leave it blank."
+            );
+
+            if (testChanged && unitInput.value.trim() !== "") {
+                message += (
+                    " The test changed; your entered unit was kept. "
+                    + "Check that it matches the report for this test."
+                );
+            }
+
+            unitHelp.textContent = message;
+        }
+
+        select.addEventListener("change", () => {
+            updateUnitSuggestions(true);
+        });
+
+        updateUnitSuggestions();
+    }
+
     panel.hidden = false;
     updateOptions();
 })();
