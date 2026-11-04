@@ -1,0 +1,34 @@
+{% extends "core/base.html" %}
+{% block title %}Lab report #{{ report.pk }}{% endblock %}
+{% block content %}
+<h1>Lab report #{{ report.pk }}</h1>
+<p>Patient: {{ patient.full_name }} (ID: {{ patient.pk }})</p>
+<p><a href="{% url 'labs:report_list' patient.pk %}">All reports for this patient</a> | <a href="{% url 'patients:detail' patient.pk %}">Return to patient</a></p>
+<dl>
+<dt>Laboratory</dt><dd>{{ report.laboratory_name|default:"Not provided" }}</dd>
+<dt>Report number</dt><dd>{{ report.report_number|default:"Not provided" }}</dd>
+<dt>Report issue date</dt><dd>{{ report.report_date|date:"Y-m-d"|default:"Not provided" }}</dd>
+<dt>Report notes</dt><dd>{{ report.notes|default:"—"|linebreaksbr }}</dd>
+</dl>
+<h2>Recorded results</h2>
+<p>These are user-entered data, not independently verified laboratory results. Missing units and reference ranges have not been inferred.</p>
+<div style="overflow-x:auto;">
+<table>
+<thead><tr><th scope="col">Test</th><th scope="col">Test date</th><th scope="col">Reported value</th><th scope="col">Unit</th><th scope="col">Reported reference range</th><th scope="col">Notes</th></tr></thead>
+<tbody>
+{% for result in results %}
+<tr>
+<th scope="row">{{ result.lab_test }}</th>
+<td>{{ result.test_date|date:"Y-m-d" }}</td>
+<td style="white-space:pre-wrap;">{{ result.value }}</td>
+<td style="white-space:pre-wrap;">{{ result.unit|default:"Not provided" }}</td>
+<td style="white-space:pre-wrap;">{{ result.reference_range|default:"Not provided" }}</td>
+<td>{{ result.notes|default:"—"|linebreaksbr }}</td>
+</tr>
+{% empty %}<tr><td colspan="6">No linked results.</td></tr>{% endfor %}
+</tbody>
+</table>
+</div>
+<h2>Analysis and trends</h2>
+<p>Not implemented on this page yet. No interpretation has been generated.</p>
+{% endblock %}

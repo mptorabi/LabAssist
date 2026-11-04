@@ -19,9 +19,11 @@
                 {% endif %}
             </dd>
 
-            <dt>Sex assigned at birth</dt>
+                        <dt>Sex assigned at birth</dt>
             <dd>{{ patient.get_sex_assigned_at_birth_display }}</dd>
-                </dl>
+        </dl>
+
+        {% include "labs/_patient_report_links.html" %}
 
         {% if perms.labs.view_labresult and perms.labs.add_labresult %}
             <p>

@@ -1,6 +1,9 @@
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+
+from django.views.decorators.http import require_http_methods, require_GET
 
 from patients.models import Patient
 
@@ -18,6 +21,7 @@ from .report_forms import LabReportEntryForm, LabReportResultFormSet
     ),
     raise_exception=True,
 )
+@require_http_methods(["GET", "POST"])
 def lab_report_create(request, patient_pk):
     patient = get_object_or_404(Patient, pk=patient_pk)
     panels = LabPanel.objects.filter(is_active=True).order_by("name", "code")
@@ -170,3 +174,40 @@ def lab_report_create(request, patient_pk):
             "entry_error": error,
         },
     )
+
+
+@login_required
+@permission_required(
+    ("patients.view_patient", "labs.view_labresult", "labs.view_labreport"),
+    raise_exception=True,
+)
+@require_GET
+def lab_report_list(request, patient_pk):
+    patient = get_object_or_404(Patient, pk=patient_pk)
+    reports = patient.lab_reports.order_by("-created_at", "-pk")
+    page = Paginator(reports, 20).get_page(request.GET.get("page"))
+    return render(request, "labs/lab_report_list.html", {
+        "patient": patient,
+        "page_obj": page,
+    })
+
+
+@login_required
+@permission_required(
+    ("patients.view_patient", "labs.view_labresult", "labs.view_labreport"),
+    raise_exception=True,
+)
+@require_GET
+def lab_report_detail(request, patient_pk, report_pk):
+    report = get_object_or_404(
+        LabReport.objects.select_related("patient"),
+        pk=report_pk,
+        patient_id=patient_pk,
+    )
+    return render(request, "labs/lab_report_detail.html", {
+        "patient": report.patient,
+        "report": report,
+        "results": report.results.select_related("lab_test").order_by(
+            "test_date", "lab_test__name", "pk",
+        ),
+    })

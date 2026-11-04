@@ -6,6 +6,16 @@ app_name = "labs"
 
 urlpatterns = [
     path(
+        "patients/<int:patient_pk>/reports/",
+        report_views.lab_report_list,
+        name="report_list",
+    ),
+    path(
+        "patients/<int:patient_pk>/reports/<int:report_pk>/",
+        report_views.lab_report_detail,
+        name="report_detail",
+    ),
+    path(
         "patients/<int:patient_pk>/results/new/",
         views.lab_result_create,
         name="result_create",

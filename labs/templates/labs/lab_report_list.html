@@ -1,0 +1,28 @@
+{% extends "core/base.html" %}
+{% block title %}Lab reports{% endblock %}
+{% block content %}
+<h1>Lab reports</h1>
+<p>Patient: {{ patient.full_name }} (ID: {{ patient.pk }})</p>
+<p><a href="{% url 'patients:detail' patient.pk %}">Return to patient</a></p>
+{% if perms.labs.add_labreport and perms.labs.add_labresult %}
+<p><a href="{% url 'labs:report_create' patient.pk %}">Enter a new report</a></p>
+{% endif %}
+<p>Reports are listed by entry time. Individual results retain their own test dates. Older standalone results remain in the patient history.</p>
+<ul>
+{% for report in page_obj %}
+<li>
+<a href="{% url 'labs:report_detail' patient.pk report.pk %}">Report #{{ report.pk }}</a>
+— Laboratory: {{ report.laboratory_name|default:"Not provided" }}
+— Report number: {{ report.report_number|default:"Not provided" }}
+— Issue date: {{ report.report_date|date:"Y-m-d"|default:"Not provided" }}
+</li>
+{% empty %}<li>No reports have been recorded for this patient.</li>{% endfor %}
+</ul>
+{% if page_obj.has_other_pages %}
+<nav aria-label="Report pages">
+{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

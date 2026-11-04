@@ -1,0 +1,11 @@
+{% comment %}Include inside the patient detail content block, with patient in context.{% endcomment %}
+<nav aria-label="Laboratory reports">
+{% if perms.patients.view_patient and perms.labs.view_labresult %}
+    {% if perms.labs.view_labreport %}
+        <a href="{% url 'labs:report_list' patient.pk %}">View lab reports</a>
+    {% endif %}
+    {% if perms.labs.add_labreport and perms.labs.add_labresult %}
+        <a href="{% url 'labs:report_create' patient.pk %}">Enter lab report</a>
+    {% endif %}
+{% endif %}
+</nav>
