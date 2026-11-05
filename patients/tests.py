@@ -757,6 +757,7 @@ class PatientLabHistoryViewTests(TestCase):
         self.assertNotContains(response, "<script>")
 
     def test_history_displays_placeholder_for_empty_notes(self):
+        from django.urls import reverse
         from django.utils.html import escape
 
         # Give other optional fields values so the placeholder
@@ -769,16 +770,32 @@ class PatientLabHistoryViewTests(TestCase):
 
         response = self.client.get(self.url)
 
+        report_url = reverse(
+            "labs:result_report",
+            args=[
+                self.newer_result.patient_id,
+                self.newer_result.pk,
+            ],
+        )
+
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
             (
                 "<tr>"
                 f"<td>{self.newer_result.test_date:%Y-%m-%d}</td>"
-                f"<td>{escape(self.newer_result.value)}</td>"
+                "<td>"
+                f'<a href="{escape(report_url)}">'
+                f"{escape(self.newer_result.value)}"
+                "</a>"
+                "</td>"
                 "<td>synthetic-unit</td>"
                 "<td>synthetic-range</td>"
                 "<td>Not recorded</td>"
+                "<td>"
+                "Not plotted: not a supported plain decimal "
+                "(or outside plotting bounds)."
+                "</td>"
                 "</tr>"
             ),
             html=True,

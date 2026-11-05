@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect, render
 from .forms import PatientForm
 from labs.models import LabTest
+from labs.history import build_history
 from .models import Patient
 
 
@@ -26,6 +27,7 @@ def patient_lab_history(request, pk, lab_test_pk):
             "patient": patient,
             "lab_test": lab_test,
             "lab_results": lab_results,
+            **build_history(lab_results),
         },
     )
 
@@ -83,4 +85,3 @@ def patient_detail(request, pk):
             "lab_results": lab_results,
         },
     )
-
