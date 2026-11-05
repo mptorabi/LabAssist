@@ -1,54 +1,178 @@
-PANELS = (
-    ("builtin-cbc", "CBC — basic indices (no differential)", "hematology", "Hematology", (
-        ("CBC_WBC", "White blood cell count"),
-        ("CBC_RBC", "Red blood cell count"),
-        ("CBC_HGB", "Hemoglobin"),
-        ("CBC_HCT", "Hematocrit"),
-        ("CBC_MCV", "Mean corpuscular volume"),
-        ("CBC_MCH", "Mean corpuscular hemoglobin"),
-        ("CBC_MCHC", "Mean corpuscular hemoglobin concentration"),
-        ("CBC_PLT", "Platelet count"),
-    )),
-    ("builtin-renal", "Renal markers — creatinine and urea", "chemistry", "Chemistry", (
-        ("CHEM_CREATININE", "Creatinine"),
-        ("CHEM_UREA", "Urea"),
-        ("CHEM_BUN", "Blood urea nitrogen (BUN)"),
-    )),
-    ("builtin-electrolytes", "Electrolytes — basic", "chemistry", "Chemistry", (
-        ("CHEM_SODIUM", "Sodium"),
-        ("CHEM_POTASSIUM", "Potassium"),
-        ("CHEM_CHLORIDE", "Chloride"),
-    )),
-    ("builtin-liver", "Liver-related markers", "chemistry", "Chemistry", (
-        ("CHEM_ALT", "Alanine aminotransferase (ALT)"),
-        ("CHEM_AST", "Aspartate aminotransferase (AST)"),
-        ("CHEM_ALP", "Alkaline phosphatase (ALP)"),
-        ("CHEM_GGT", "Gamma-glutamyl transferase (GGT)"),
-        ("CHEM_BILIRUBIN_TOTAL", "Bilirubin — total"),
-        ("CHEM_BILIRUBIN_DIRECT", "Bilirubin — direct"),
-        ("CHEM_ALBUMIN", "Albumin"),
-        ("CHEM_PROTEIN_TOTAL", "Protein — total"),
-    )),
-    ("builtin-lipids", "Lipid markers", "chemistry", "Chemistry", (
-        ("LIPID_CHOLESTEROL_TOTAL", "Cholesterol — total"),
-        ("LIPID_HDL", "HDL cholesterol"),
-        ("LIPID_LDL_DIRECT", "LDL cholesterol — directly measured"),
-        ("LIPID_LDL_CALCULATED", "LDL cholesterol — calculated"),
-        ("LIPID_TRIGLYCERIDES", "Triglycerides"),
-    )),
-    ("builtin-glycemia", "Glucose and HbA1c", "chemistry", "Chemistry", (
-        ("GLUCOSE_FASTING", "Glucose — fasting"),
-        ("GLUCOSE_RANDOM", "Glucose — random"),
-        ("HBA1C", "Hemoglobin A1c (HbA1c)"),
-    )),
-    ("builtin-thyroid", "Thyroid markers", "endocrinology", "Endocrinology", (
-        ("THYROID_TSH", "Thyroid-stimulating hormone (TSH)"),
-        ("THYROID_FT4", "Thyroxine (T4) — free"),
-        ("THYROID_FT3", "Triiodothyronine (T3) — free"),
-        ("THYROID_T4_TOTAL", "Thyroxine (T4) — total"),
-        ("THYROID_T3_TOTAL", "Triiodothyronine (T3) — total"),
-    )),
+from .bundled_catalog import BUNDLED_TESTS
+
+
+# Fields:
+# panel_code, panel_name, category_code, category_name, test_codes
+
+PANEL_DEFINITIONS = (
+    (
+        "builtin-cbc",
+        "CBC — basic indices (no differential)",
+        "hematology",
+        "Hematology",
+        (
+            "CBC_WBC",
+            "CBC_RBC",
+            "CBC_HGB",
+            "CBC_HCT",
+            "CBC_MCV",
+            "CBC_MCH",
+            "CBC_MCHC",
+            "CBC_PLT",
+        ),
+    ),
+    (
+        "builtin-renal",
+        "Renal markers — creatinine and urea",
+        "chemistry",
+        "Chemistry",
+        (
+            "CHEM_CREATININE",
+            "CHEM_UREA",
+            "CHEM_BUN",
+        ),
+    ),
+    (
+        "builtin-electrolytes",
+        "Electrolytes — basic",
+        "chemistry",
+        "Chemistry",
+        (
+            "CHEM_SODIUM",
+            "CHEM_POTASSIUM",
+            "CHEM_CHLORIDE",
+        ),
+    ),
+    (
+        "builtin-liver",
+        "Liver-related markers",
+        "chemistry",
+        "Chemistry",
+        (
+            "CHEM_ALT",
+            "CHEM_AST",
+            "CHEM_ALP",
+            "CHEM_GGT",
+            "CHEM_BILIRUBIN_TOTAL",
+            "CHEM_BILIRUBIN_DIRECT",
+            "CHEM_ALBUMIN",
+            "CHEM_PROTEIN_TOTAL",
+        ),
+    ),
+    (
+        "builtin-lipids",
+        "Lipid markers",
+        "chemistry",
+        "Chemistry",
+        (
+            "LIPID_CHOLESTEROL_TOTAL",
+            "LIPID_HDL",
+            "LIPID_LDL_DIRECT",
+            "LIPID_LDL_CALCULATED",
+            "LIPID_TRIGLYCERIDES",
+        ),
+    ),
+    (
+        "builtin-glycemia",
+        "Glucose and HbA1c",
+        "chemistry",
+        "Chemistry",
+        (
+            "GLUCOSE_FASTING",
+            "GLUCOSE_RANDOM",
+            "HBA1C",
+        ),
+    ),
+    (
+        "builtin-thyroid",
+        "Thyroid markers",
+        "endocrinology",
+        "Endocrinology",
+        (
+            "THYROID_TSH",
+            "THYROID_FT4",
+            "THYROID_FT3",
+            "THYROID_T4_TOTAL",
+            "THYROID_T3_TOTAL",
+        ),
+    ),
 )
+
+
+def build_legacy_panels(definitions, catalog):
+    """Resolve code references into the existing installer format."""
+    tests_by_code = {}
+
+    for test in catalog:
+        if test.code in tests_by_code:
+            raise ValueError(
+                f"Duplicate catalog code: {test.code!r}."
+            )
+        tests_by_code[test.code] = test
+
+    panels = []
+    panel_codes = set()
+
+    for (
+        panel_code,
+        panel_name,
+        category_code,
+        category_name,
+        test_codes,
+    ) in definitions:
+        if panel_code in panel_codes:
+            raise ValueError(
+                f"Duplicate panel code: {panel_code!r}."
+            )
+        panel_codes.add(panel_code)
+
+        members = []
+        seen = set()
+
+        for test_code in test_codes:
+            if test_code in seen:
+                raise ValueError(
+                    f"Duplicate test {test_code!r} "
+                    f"within panel {panel_code!r}."
+                )
+            seen.add(test_code)
+
+            if test_code not in tests_by_code:
+                raise ValueError(
+                    f"Unknown test {test_code!r} "
+                    f"in panel {panel_code!r}."
+                )
+
+            test = tests_by_code[test_code]
+
+            # The legacy installer uses the panel category for tests.
+            # Reject mixed-category panels until that installer is updated.
+            if (
+                test.category_code != category_code
+                or test.category_name != category_name
+            ):
+                raise ValueError(
+                    f"Category mismatch for {test_code!r} "
+                    f"in panel {panel_code!r}."
+                )
+
+            members.append((test.code, test.name))
+
+        panels.append(
+            (
+                panel_code,
+                panel_name,
+                category_code,
+                category_name,
+                tuple(members),
+            )
+        )
+
+    return tuple(panels)
+
+
+PANELS = build_legacy_panels(PANEL_DEFINITIONS, BUNDLED_TESTS)
+
 
 DESCRIPTION = (
     "Entry preset only, not a recommendation to order tests or a complete laboratory panel. "
