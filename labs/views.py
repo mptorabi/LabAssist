@@ -4,7 +4,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from patients.models import Patient
 
 from .forms import LabResultForm
-from .models import LabResult, LabTest
+from .entry_catalog import entry_catalog
+from .models import LabResult
 
 
 @login_required
@@ -31,41 +32,7 @@ def lab_result_create(request, patient_pk):
     else:
         form = LabResultForm()
 
-    catalog_tests = (
-        LabTest.objects
-        .filter(is_active=True)
-        .prefetch_related("aliases", "suggested_units")
-        .select_related("category")
-        .order_by("name", "code")
-    )
-
-    test_search_data = [
-        {
-            "id": str(test.pk),
-            "code": test.code,
-            "name": test.name,
-            "category_id": (
-                str(test.category_id)
-                if test.category_id is not None
-                else ""
-            ),
-            "category_name": (
-                test.category.name
-                if test.category_id is not None
-                else ""
-            ),
-            "aliases": [
-                alias.name
-                for alias in test.aliases.all()
-            ],
-            "units": [
-                unit.symbol
-                for unit in test.suggested_units.all()
-                if unit.is_active
-            ],
-        }
-        for test in catalog_tests
-    ]
+    test_search_data = entry_catalog()
 
     return render(
         request,

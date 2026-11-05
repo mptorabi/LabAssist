@@ -1,187 +1,118 @@
 {% extends "core/base.html" %}
-
+{% load static %}
 {% block title %}New Lab Report{% endblock %}
-
 {% block content %}
+<link rel="stylesheet" href="{% static 'labs/css/report_entry.css' %}">
+<div class="report-entry">
 <h1>New Lab Report</h1>
-
-<p>
-    Patient: {{ patient.full_name }} (ID: {{ patient.pk }})
-</p>
-
-<p>
-    Enter information exactly as printed on the laboratory report.
-    Do not infer missing units or reference ranges.
-</p>
-
-{% if entry_error %}
-    <p role="alert">{{ entry_error }}</p>
-{% endif %}
-
-{% if not reviewing %}
-<section>
-    <h2>1. Select panels</h2>
-
-    <form method="get">
-        <fieldset>
-            <legend>Available entry presets</legend>
-
-            {% for panel in panels %}
-                <p>
-                    <label>
-                        <input
-                            type="checkbox"
-                            name="panels"
-                            value="{{ panel.code }}"
-                            {% if panel.code in selected_codes %}checked{% endif %}
-                        >
-                        {{ panel.name }}
-                    </label>
-                    {% if panel.description %}
-                        <br>{{ panel.description }}
-                    {% endif %}
-                </p>
-            {% empty %}
-                <p>No prepared panels are currently available.</p>
-            {% endfor %}
-        </fieldset>
-
-        <p>
-            Loading panels starts a new entry form.
-            Unsaved values will not be carried over.
-        </p>
-
-        <button type="submit">Load selected panels</button>
-    </form>
-</section>
-{% endif %}
-
-{% if header_form %}
-<form method="post">
+<p>Patient: {{ patient.full_name }} (ID: {{ patient.pk }})</p>
+<p>Copy information exactly as printed. Do not infer missing units or reference ranges.
+Panels are entry presets, not recommendations to order tests.</p>
+{% if entry_error %}<p role="alert" class="errorlist">{{ entry_error }}</p>{% endif %}
+{% if entry_notice %}<p role="status">{{ entry_notice }}</p>{% endif %}
+<form method="post" id="report-entry-form" autocomplete="off">
     {% csrf_token %}
-
-    {% for code in selected_codes %}
-        <input type="hidden" name="panels" value="{{ code }}">
-    {% endfor %}
-
+    {% for code in selected_codes %}<input type="hidden" name="panels" value="{{ code }}">{% endfor %}
     {% if reviewing %}
         <h2>Review before saving</h2>
-
-        <p>
-            Verify the patient, dates, results, units and reference ranges.
-            The entered data has not been independently verified.
-        </p>
-
+        <p>Verify the patient, dates, results, units and reference ranges.
+        The entered data has not been independently verified. Nothing has been saved yet.</p>
         <dl>
-            <dt>Laboratory</dt>
-            <dd>{{ header_form.cleaned_data.laboratory_name|default:"Not provided" }}</dd>
-
-            <dt>Report number</dt>
-            <dd>{{ header_form.cleaned_data.report_number|default:"Not provided" }}</dd>
-
-            <dt>Report issue date</dt>
-            <dd>{{ header_form.cleaned_data.report_date|date:"Y-m-d"|default:"Not provided" }}</dd>
-
-            <dt>Report notes</dt>
-            <dd>{{ header_form.cleaned_data.notes|default:"—"|linebreaksbr }}</dd>
+            <dt>Laboratory</dt><dd>{{ header_form.cleaned_data.laboratory_name|default:"Not provided" }}</dd>
+            <dt>Report number</dt><dd>{{ header_form.cleaned_data.report_number|default:"Not provided" }}</dd>
+            <dt>Report issue date</dt><dd>{{ header_form.cleaned_data.report_date|date:"Y-m-d"|default:"Not provided" }}</dd>
+            <dt>Report notes</dt><dd>{{ header_form.cleaned_data.notes|default:"—"|linebreaksbr }}</dd>
         </dl>
-
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th scope="col">Test</th>
-                        <th scope="col">Test date</th>
-                        <th scope="col">Result</th>
-                        <th scope="col">Unit</th>
-                        <th scope="col">Reference range</th>
-                        <th scope="col">Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in review_rows %}
-                        <tr>
-                            <th scope="row">{{ row.lab_test }}</th>
-                            <td>{{ row.test_date|date:"Y-m-d" }}</td>
-                            <td style="white-space: pre-wrap;">{{ row.value }}</td>
-                            <td>{{ row.unit|default:"—" }}</td>
-                            <td>{{ row.reference_range|default:"—" }}</td>
-                            <td>{{ row.notes|default:"—"|linebreaksbr }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {% for field in header_form %}
-            {{ field.as_hidden }}
-        {% endfor %}
-
+        <div class="report-table-wrap" role="region" aria-label="Review results" tabindex="0">
+        <table>
+            <thead><tr><th scope="col">Test</th><th scope="col">Test date</th><th scope="col">Result</th>
+                <th scope="col">Unit</th><th scope="col">Reference range</th><th scope="col">Notes</th></tr></thead>
+            <tbody>{% for row in review_rows %}<tr>
+                <th scope="row">{{ row.lab_test }}</th><td>{{ row.test_date|date:"Y-m-d" }}</td>
+                <td class="reported-text">{{ row.value }}</td><td class="reported-text">{{ row.unit|default:"—" }}</td>
+                <td class="reported-text">{{ row.reference_range|default:"—" }}</td>
+                <td class="reported-text">{{ row.notes|default:"—" }}</td>
+            </tr>{% endfor %}</tbody>
+        </table></div>
+        {% for field in header_form %}{{ field.as_hidden }}{% endfor %}
         {{ result_formset.management_form }}
-
-        {% for row_form in result_formset %}
-            {% for field in row_form %}
-                {{ field.as_hidden }}
-            {% endfor %}
-        {% endfor %}
-
-        <p>
-            <button type="submit" name="action" value="edit">
-                Back to editing
-            </button>
-            <button type="submit" name="action" value="save">
-                Confirm and save report
-            </button>
+        {% for row_form in result_formset %}{% for field in row_form %}{{ field.as_hidden }}{% endfor %}{% endfor %}
+        <p class="report-actions">
+            <button type="submit" name="action" value="edit">Back to editing</button>
+            <button type="submit" name="action" value="save">Confirm and save report</button>
         </p>
     {% else %}
-        <h2>2. Report information</h2>
-
-        {{ header_form.as_p }}
-
-        <h2>3. Results</h2>
-
-        <p>
-            Complete only the tests present on your report.
-            Entirely blank rows will not be saved.
-        </p>
-
+        {# First submit control makes implicit Enter submission review, never add/save. #}
+        <p><button type="submit" name="action" value="review">Review results</button></p>
+        <h2>1. Report information</h2>
+        <div class="report-header-fields">{{ header_form.as_p }}</div>
+        <h2>2. Add tests</h2>
+        <p>Start with panels, individual tests, or both. Adding rows keeps your current entries.
+        Nothing is saved until confirmation. Limit: 100 rows.</p>
+        <details class="report-presets">
+            <summary>Add prepared panels</summary>
+            <fieldset><legend>Available entry presets</legend>
+            {% for panel in panels %}<div class="report-panel">
+                <label><input type="checkbox" name="add_panels" value="{{ panel.code }}"> {{ panel.name }}</label>
+                {% if panel.description %}<small>{{ panel.description }}</small>{% endif %}
+            </div>{% empty %}<p>No prepared panels are currently available.</p>{% endfor %}
+            </fieldset>
+            <button type="submit" name="action" value="add_panels" formnovalidate>Add selected panels</button>
+        </details>
+        <div id="lab-test-search-panel" hidden>
+            <label for="lab-test-category">Category</label>
+            <select id="lab-test-category"><option value="">All categories</option><option value="uncategorized">Uncategorized</option></select>
+            <label for="lab-test-search">Search lab tests</label>
+            <input type="search" id="lab-test-search" placeholder="Name, code, or alias" autocomplete="off" aria-describedby="lab-test-search-help">
+            <p id="lab-test-search-help">Search, then explicitly choose a test. Check free/total, urea/BUN and direct/calculated identities.</p>
+            <p id="lab-test-search-status" role="status" aria-live="polite"></p>
+        </div>
+        <label for="id_lab_test">Test to add</label>
+        <select id="id_lab_test" name="add_test">
+            <option value="">Choose a test</option>
+            {% for test in test_search_data %}<option value="{{ test.id }}">{{ test.name }} ({{ test.code }})</option>{% endfor %}
+        </select>
+        <button type="submit" name="action" value="add_test" formnovalidate>Add test</button>
+        <noscript><p>Search requires JavaScript; the full test list and panel buttons still work offline.</p></noscript>
+        <h2>3. Results ({{ result_formset|length }} rows)</h2>
+        <p>Complete only tests present on your report. Entirely blank rows are not saved.
+        Suggested units are optional spelling choices, never defaults or conversion rules.
+        Select only the unit printed on the report; type another unit or leave it blank.</p>
         {{ result_formset.management_form }}
         {{ result_formset.management_form.errors }}
         {{ result_formset.non_form_errors }}
-
-        {% for row_form in result_formset %}
-            <fieldset>
-                <legend>{{ row_form.test_label }}</legend>
-
-                {{ row_form.non_field_errors }}
-                {{ row_form.lab_test }}
-                {{ row_form.lab_test.errors }}
-
-                {% for field in row_form.visible_fields %}
-                    <p>
-                        {{ field.label_tag }}
-                        {{ field }}
-                        {{ field.errors }}
-                        {% if field.help_text %}
-                            <br><small>{{ field.help_text }}</small>
-                        {% endif %}
-                    </p>
-                {% endfor %}
-            </fieldset>
-        {% endfor %}
-
-        <p>
-            <button type="submit" name="action" value="review">
-                Review results
-            </button>
+        <div class="report-table-wrap" role="region" aria-label="Result entry" tabindex="0">
+        <table class="report-results">
+            <thead><tr><th scope="col">Test</th><th scope="col">Reported value</th><th scope="col">Unit</th>
+                <th scope="col">Reference range</th><th scope="col">More</th></tr></thead>
+            <tbody>{% for row_form in result_formset %}<tr>
+                <th scope="row">{{ row_form.test_label }}{{ row_form.lab_test }}{{ row_form.lab_test.errors }}{{ row_form.non_field_errors }}</th>
+                <td>{{ row_form.value }}{{ row_form.value.errors }}</td>
+                <td>{{ row_form.unit }}{{ row_form.unit.errors }}</td>
+                <td>{{ row_form.reference_range }}{{ row_form.reference_range.errors }}</td>
+                <td><details {% if row_form.test_date.value or row_form.notes.value or row_form.errors %}open{% endif %}>
+                    <summary>Date / notes</summary>
+                    <p>{{ row_form.test_date.label_tag }}{{ row_form.test_date }}{{ row_form.test_date.errors }}
+                    <small>Leave blank to use the default test date.</small></p>
+                    <p>{{ row_form.notes.label_tag }}{{ row_form.notes }}{{ row_form.notes.errors }}</p>
+                </details></td>
+            </tr>{% empty %}<tr><td colspan="5">No rows yet. Add a panel or a test above.</td></tr>{% endfor %}</tbody>
+        </table></div>
+        <p class="report-actions">
+            <button type="submit" name="action" value="review">Review results</button>
+            <button type="submit" name="action" value="remove_blank" formnovalidate>Remove entirely blank rows</button>
         </p>
+        <p>To remove a populated row, clear its value, unit, range, date and notes first.</p>
     {% endif %}
 </form>
+<p><a href="{% url 'patients:detail' patient.pk %}">Return to patient</a></p>
+</div>
+{% if not reviewing %}
+    {% for test in test_search_data %}{% if test.units %}<datalist id="unit-options-{{ test.id }}">
+        {% for unit in test.units %}<option value="{{ unit }}"></option>{% endfor %}
+    </datalist>{% endif %}{% endfor %}
+    {{ test_search_data|json_script:"lab-test-search-data" }}
+    <script src="{% static 'labs/js/catalog_search.js' %}" defer></script>
+    <script src="{% static 'labs/js/lab_test_search.js' %}" defer></script>
 {% endif %}
-
-<p>
-    <a href="{% url 'patients:detail' patient.pk %}">
-        Return to patient
-    </a>
-</p>
 {% endblock %}

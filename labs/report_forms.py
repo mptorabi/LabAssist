@@ -40,6 +40,11 @@ class LabReportEntryForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"rows": 2}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("laboratory_name", "report_number", "notes"):
+            self.fields[name].strip = False
+
     def clean_default_test_date(self):
         value = self.cleaned_data["default_test_date"]
 
@@ -167,7 +172,8 @@ LabReportResultFormSet = formset_factory(
     LabReportResultRowForm,
     formset=BaseLabReportResultFormSet,
     extra=0,
-    max_num=200,
+    # Six fields per row; stay below Django's default 1000 POST-field limit.
+    max_num=100,
     validate_max=True,
-    absolute_max=200,
+    absolute_max=100,
 )

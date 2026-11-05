@@ -1,7 +1,6 @@
 from django.db.models import Q
 from .models import LabResult, LabTest
 from django import forms
-from .models import LabResult
 
 
 class LabResultForm(forms.ModelForm):
@@ -20,9 +19,16 @@ class LabResultForm(forms.ModelForm):
             "name", "code"
         )
 
-        self.fields["lab_test"].queryset = available_tests.order_by(
-            "name", "code"
-        )
+        # Store report text verbatim; whitespace-only values are still invalid.
+        for name in ("value", "unit", "reference_range", "notes"):
+            self.fields[name].strip = False
+
+    def clean_value(self):
+        value = self.cleaned_data["value"]
+        if not value.strip():
+            raise forms.ValidationError("Enter the reported result.")
+        return value
+
     class Meta:
         model = LabResult
         fields = [

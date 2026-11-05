@@ -1,0 +1,31 @@
+.report-entry input:not([type="checkbox"]):not([type="hidden"]),
+.report-entry select, .report-entry textarea {
+    max-width: 100%; padding: .45rem; border: 1px solid #8b9bb0;
+    border-radius: 4px; background: white; color: #172b4d; font: inherit;
+}
+.report-entry input:focus-visible, .report-entry select:focus-visible,
+.report-entry textarea:focus-visible, .report-entry summary:focus-visible {
+    outline: 3px solid #174ea6; outline-offset: 2px;
+}
+.report-header-fields {display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 1rem;}
+.report-header-fields label, .report-results label, .report-entry small {display: block;}
+.report-header-fields input, .report-header-fields textarea {width: 100%;}
+.report-presets {margin: 1rem 0; padding: .75rem; background: #fff; border: 1px solid #dbe3ed;}
+.report-entry summary {cursor: pointer; font-weight: 600;}
+.report-panel {margin: .75rem 0;}
+.report-entry #lab-test-search-panel {margin: 1rem 0;}
+.report-entry #lab-test-search-panel label {margin-right: .5rem;}
+.report-entry #id_lab_test {max-width: min(100%, 620px);}
+.report-table-wrap {overflow-x: auto; margin: 1rem 0;}
+.report-entry table {border-collapse: collapse; width: 100%; background: white;}
+.report-entry th, .report-entry td {padding: .6rem; border: 1px solid #dbe3ed; text-align: left; vertical-align: top;}
+.report-entry thead {background: #e9eff7;}
+.report-results {min-width: 850px;}
+.report-results th {width: 22%; min-width: 160px;}
+.report-results td {min-width: 135px;}
+.report-results td:last-child {min-width: 180px;}
+.report-results input, .report-results textarea {width: 100%;}
+.report-results details p {margin: .6rem 0;}
+.report-actions {display: flex; flex-wrap: wrap; gap: .75rem;}
+.report-entry .errorlist {color: #9c1724; font-weight: 600; padding-left: 1.2rem;}
+.reported-text {white-space: pre-wrap; overflow-wrap: anywhere;}

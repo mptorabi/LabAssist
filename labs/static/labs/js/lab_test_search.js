@@ -12,7 +12,11 @@
         !panel || !input || !status || !select
         || !dataElement || !categorySelect
     ) {
+        return;
     }
+
+    const search = globalThis.LabAssistCatalog;
+    if (!search) return;
 
     let catalog;
 
@@ -22,15 +26,8 @@
         return;
     }
 
-    const normalize = (value) => String(value).normalize("NFKC").toLowerCase();
-
-    const searchTextById = new Map(
-        catalog.map((test) => [
-            String(test.id),
-            normalize([test.code, test.name, ...test.aliases].join(" ")),
-        ])
-    );
-        const categoryByTestId = new Map(
+    const testsById = new Map(catalog.map((test) => [String(test.id), test]));
+    const categoryByTestId = new Map(
         catalog.map((test) => [
             String(test.id),
             String(test.category_id ?? ""),
@@ -64,16 +61,25 @@
 
     function updateOptions() {
         const selectedValue = select.value;
-        const terms = normalize(input.value).trim().split(/\s+/).filter(Boolean);
         const fragment = document.createDocumentFragment();
+        // Stable ranking: exact code/name/alias, prefix, word prefix, substring.
+        // The current selection is retained even outside the search/category.
+        const rankedOptions = originalOptions.map((option, index) => ({
+            ...option, index,
+            score: search.score(testsById.get(option.value) ?? {
+                code: "", name: option.label, aliases: [],
+            }, input.value),
+        })).sort((a, b) => {
+            if (a.value === "") return -1;
+            if (b.value === "") return 1;
+            return (a.score - b.score) || (a.index - b.index);
+        });
 
         let matchCount = 0;
         let selectedOutsideSearch = false;
 
-        for (const option of originalOptions) {
+        for (const option of rankedOptions) {
             const isPlaceholder = option.value === "";
-            const searchText = searchTextById.get(option.value)
-                ?? normalize(option.label);
 
             const categoryId = categoryByTestId.get(option.value) ?? "";
             const selectedCategory = categorySelect.value;
@@ -87,7 +93,7 @@
 
             const matches = !isPlaceholder
                 && matchesCategory
-                && terms.every((term) => searchText.includes(term));
+                && Number.isFinite(option.score);
 
             const isSelected = option.value === selectedValue;
 

@@ -171,18 +171,18 @@ class ReportWorkflowTests(TestCase):
         self.client.post(self.url, self.payload())
         self.assert_not_saved()
 
-    def test_no_panel_rejected(self):
+    def test_individual_entry_without_panel_is_allowed(self):
         data = self.payload()
         del data["panels"]
-        self.client.post(self.url, data)
-        self.assert_not_saved()
+        self.assertEqual(self.client.post(self.url, data).status_code, 302)
+        self.assertEqual(LabResult.objects.get().lab_test, self.a)
 
-    def test_outside_test_rejected(self):
+    def test_active_test_outside_panel_is_allowed(self):
         outside = LabTest.objects.create(code="OUTSIDE", name="Outside")
         data = self.payload()
         data["results-0-lab_test"] = str(outside.pk)
-        self.client.post(self.url, data)
-        self.assert_not_saved()
+        self.assertEqual(self.client.post(self.url, data).status_code, 302)
+        self.assertEqual(LabResult.objects.get().lab_test, outside)
 
     def test_inactive_test_rejected(self):
         self.a.is_active = False
@@ -196,12 +196,12 @@ class ReportWorkflowTests(TestCase):
         self.client.post(self.url, data)
         self.assert_not_saved()
 
-    def test_missing_row_rejected(self):
+    def test_subset_of_panel_is_allowed(self):
         data = self.payload()
         data["results-TOTAL_FORMS"] = "1"
         data["results-INITIAL_FORMS"] = "1"
-        self.client.post(self.url, data)
-        self.assert_not_saved()
+        self.assertEqual(self.client.post(self.url, data).status_code, 302)
+        self.assertEqual(LabResult.objects.count(), 1)
 
     def test_missing_management_form_rejected(self):
         data = self.payload()
@@ -213,7 +213,7 @@ class ReportWorkflowTests(TestCase):
         data = self.payload()
         data["results-TOTAL_FORMS"] = "100000"
         response = self.client.post(self.url, data)
-        self.assertEqual(len(response.context["result_formset"].forms), 200)
+        self.assertEqual(len(response.context["result_formset"].forms), 100)
         self.assert_not_saved()
 
     def test_invalid_action_does_not_save(self):
