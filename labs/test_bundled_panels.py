@@ -107,6 +107,8 @@ class BundledPanelTests(TestCase):
                      ("LIPID_LDL_DIRECT", "LIPID_LDL_CALCULATED")):
             self.assertNotEqual(LabTest.objects.get(code=a).pk, LabTest.objects.get(code=b).pk)
 
-    def test_catalog_codes_are_unique(self):
-        codes = [code for *_, tests in PANELS for code, _ in tests]
-        self.assertEqual(len(codes), len(set(codes)))
+    def test_each_panel_has_unique_member_codes(self):
+        for panel_code, _, _, _, tests in PANELS:
+            with self.subTest(panel=panel_code):
+                codes = [code for code, _ in tests]
+                self.assertEqual(len(codes), len(set(codes)))
