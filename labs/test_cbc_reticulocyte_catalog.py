@@ -39,8 +39,8 @@ class CBCReticulocyteCatalogTests(unittest.TestCase):
             self.assertEqual((item.specimen, item.method, item.time_aspect), ("", "", ""))
             self.assertEqual((item.aliases, item.source_urls), ((), ()))
 
-    def test_standalone(self):
-        members = {code for panel in PANEL_DEFINITIONS for code in panel[4]}
+    def test_not_added_to_legacy_panels(self):
+        members = {code for panel in PANEL_DEFINITIONS[:7] for code in panel[4]}
         self.assertTrue(set(EXPECTED).isdisjoint(members))
 
     def test_basic_cbc_unchanged(self):

@@ -96,6 +96,13 @@ PANEL_DEFINITIONS = (
             "THYROID_T3_TOTAL",
         ),
     ),
+    ('builtin-cbc-extended', 'CBC — extended indices (no differential)', 'hematology', 'Hematology', ('CBC_WBC', 'CBC_RBC', 'CBC_HGB', 'CBC_HCT', 'CBC_MCV', 'CBC_MCH', 'CBC_MCHC', 'CBC_PLT', 'CBC_RDW_CV', 'CBC_RDW_SD', 'CBC_MPV')),
+    ('builtin-differential-percent', 'Leukocyte differential — percentages', 'hematology', 'Hematology', ('DIFF_NEUT_PCT', 'DIFF_LYMPH_PCT', 'DIFF_MONO_PCT', 'DIFF_EOS_PCT', 'DIFF_BASO_PCT')),
+    ('builtin-differential-absolute', 'Leukocyte differential — absolute counts', 'hematology', 'Hematology', ('DIFF_NEUT_ABS', 'DIFF_LYMPH_ABS', 'DIFF_MONO_ABS', 'DIFF_EOS_ABS', 'DIFF_BASO_ABS')),
+    ('builtin-reticulocytes', 'Reticulocytes — reported parameters', 'hematology', 'Hematology', ('RETIC_PCT', 'RETIC_ABS', 'RETIC_IRF_PCT')),
+    ('builtin-coagulation', 'Coagulation — PT, INR and aPTT', 'coagulation', 'Coagulation', ('COAG_PT', 'COAG_INR', 'COAG_APTT')),
+    ('builtin-minerals', 'Minerals — reported blood measurements', 'chemistry', 'Chemistry', ('CHEM_CALCIUM_TOTAL', 'CHEM_CALCIUM_IONIZED', 'CHEM_MAGNESIUM', 'CHEM_PHOSPHATE')),
+    ('builtin-iron', 'Iron-related measurements', 'chemistry', 'Chemistry', ('IRON_SERUM', 'IRON_FERRITIN', 'IRON_TIBC', 'IRON_TRANSFERRIN')),
 )
 
 

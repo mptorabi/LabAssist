@@ -17,10 +17,10 @@ class BundledPanelTests(TestCase):
 
     def test_complete_installation(self):
         self.install()
-        self.assertEqual(LabPanel.objects.count(), 7)
-        self.assertEqual(LabTest.objects.count(), 35)
-        self.assertEqual(LabPanelItem.objects.count(), 35)
-        self.assertEqual(LabTestCategory.objects.count(), 3)
+        self.assertEqual(LabPanel.objects.count(), 14)
+        self.assertEqual(LabTest.objects.count(), 62)
+        self.assertEqual(LabPanelItem.objects.count(), 70)
+        self.assertEqual(LabTestCategory.objects.count(), 4)
         for code, name, _, _, tests in PANELS:
             panel = LabPanel.objects.get(code=code)
             self.assertEqual(panel.name, name)
@@ -44,7 +44,8 @@ class BundledPanelTests(TestCase):
         test.refresh_from_db()
         self.assertEqual(test.input_type, "text")
         self.assertIsNone(test.category_id)
-        self.assertEqual(LabPanelItem.objects.get(lab_test=test).panel.code, "builtin-cbc")
+        self.assertEqual(set(LabPanelItem.objects.filter(lab_test=test).values_list('panel__code', flat=True)),
+                         {'builtin-cbc', 'builtin-cbc-extended'})
 
     def test_no_units_aliases_or_patient_records_created(self):
         self.install()

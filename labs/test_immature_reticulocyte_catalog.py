@@ -32,8 +32,8 @@ class ImmatureReticulocyteCatalogTests(unittest.TestCase):
                          ("", "", ""))
         self.assertEqual((self.item.aliases, self.item.source_urls), ((), ()))
 
-    def test_standalone(self):
-        members = {code for panel in PANEL_DEFINITIONS for code in panel[4]}
+    def test_not_added_to_legacy_panels(self):
+        members = {code for panel in PANEL_DEFINITIONS[:7] for code in panel[4]}
         self.assertNotIn(self.item.code, members)
 
     def test_single_definition_and_independent_build(self):

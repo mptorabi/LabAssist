@@ -195,7 +195,7 @@ class BundledUnitTests(TestCase):
         catalog = {test.code: test for test in BUNDLED_TESTS}
         panel_codes = {
             code
-            for panel in PANELS
+            for panel in PANELS[:7]
             for code, name in panel[4]
         }
 

@@ -207,4 +207,18 @@ TEST_DEFINITIONS = (
         "hematology", "Hematology", "numeric",
     ),
 
+    ('COAG_PT', 'Prothrombin time (PT)', 'coagulation', 'Coagulation', 'numeric'),
+    ('COAG_INR', 'International normalized ratio (INR)', 'coagulation', 'Coagulation', 'numeric'),
+    ('COAG_APTT', 'Activated partial thromboplastin time (aPTT)', 'coagulation', 'Coagulation', 'numeric'),
+    ('CHEM_CALCIUM_TOTAL', 'Calcium — total, blood', 'chemistry', 'Chemistry', 'numeric'),
+    ('CHEM_CALCIUM_IONIZED', 'Calcium — ionized, blood', 'chemistry', 'Chemistry', 'numeric'),
+    ('CHEM_MAGNESIUM', 'Magnesium, blood', 'chemistry', 'Chemistry', 'numeric'),
+    ('CHEM_PHOSPHATE', 'Phosphate, blood', 'chemistry', 'Chemistry', 'numeric'),
+    ('CHEM_URIC_ACID', 'Uric acid, blood', 'chemistry', 'Chemistry', 'numeric'),
+    ('IRON_SERUM', 'Iron, serum', 'chemistry', 'Chemistry', 'numeric'),
+    ('IRON_FERRITIN', 'Ferritin, blood', 'chemistry', 'Chemistry', 'numeric'),
+    ('IRON_TIBC', 'Total iron-binding capacity (TIBC), blood', 'chemistry', 'Chemistry', 'numeric'),
+    ('IRON_TRANSFERRIN', 'Transferrin, blood', 'chemistry', 'Chemistry', 'numeric'),
+    ('INFLAM_CRP', 'C-reactive protein (CRP) — quantitative, blood', 'chemistry', 'Chemistry', 'numeric'),
+    ('HEM_ESR', 'Erythrocyte sedimentation rate (ESR)', 'hematology', 'Hematology', 'numeric'),
 )

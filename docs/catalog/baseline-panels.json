@@ -1,0 +1,93 @@
+[
+  [
+    "builtin-cbc",
+    "CBC — basic indices (no differential)",
+    "hematology",
+    "Hematology",
+    [
+      "CBC_WBC",
+      "CBC_RBC",
+      "CBC_HGB",
+      "CBC_HCT",
+      "CBC_MCV",
+      "CBC_MCH",
+      "CBC_MCHC",
+      "CBC_PLT"
+    ]
+  ],
+  [
+    "builtin-renal",
+    "Renal markers — creatinine and urea",
+    "chemistry",
+    "Chemistry",
+    [
+      "CHEM_CREATININE",
+      "CHEM_UREA",
+      "CHEM_BUN"
+    ]
+  ],
+  [
+    "builtin-electrolytes",
+    "Electrolytes — basic",
+    "chemistry",
+    "Chemistry",
+    [
+      "CHEM_SODIUM",
+      "CHEM_POTASSIUM",
+      "CHEM_CHLORIDE"
+    ]
+  ],
+  [
+    "builtin-liver",
+    "Liver-related markers",
+    "chemistry",
+    "Chemistry",
+    [
+      "CHEM_ALT",
+      "CHEM_AST",
+      "CHEM_ALP",
+      "CHEM_GGT",
+      "CHEM_BILIRUBIN_TOTAL",
+      "CHEM_BILIRUBIN_DIRECT",
+      "CHEM_ALBUMIN",
+      "CHEM_PROTEIN_TOTAL"
+    ]
+  ],
+  [
+    "builtin-lipids",
+    "Lipid markers",
+    "chemistry",
+    "Chemistry",
+    [
+      "LIPID_CHOLESTEROL_TOTAL",
+      "LIPID_HDL",
+      "LIPID_LDL_DIRECT",
+      "LIPID_LDL_CALCULATED",
+      "LIPID_TRIGLYCERIDES"
+    ]
+  ],
+  [
+    "builtin-glycemia",
+    "Glucose and HbA1c",
+    "chemistry",
+    "Chemistry",
+    [
+      "GLUCOSE_FASTING",
+      "GLUCOSE_RANDOM",
+      "HBA1C"
+    ]
+  ],
+  [
+    "builtin-thyroid",
+    "Thyroid markers",
+    "endocrinology",
+    "Endocrinology",
+    [
+      "THYROID_TSH",
+      "THYROID_FT4",
+      "THYROID_FT3",
+      "THYROID_T4_TOTAL",
+      "THYROID_T3_TOTAL"
+    ]
+  ]
+]

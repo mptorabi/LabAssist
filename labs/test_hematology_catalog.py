@@ -72,7 +72,7 @@ class HematologyCatalogDefinitionTests(SimpleTestCase):
     def test_new_tests_do_not_change_existing_panel_membership(self):
         member_codes = {
             code
-            for *_, tests in PANELS
+            for *_, tests in PANELS[:7]
             for code, _ in tests
         }
         self.assertTrue(set(EXPECTED).isdisjoint(member_codes))
@@ -119,11 +119,11 @@ class HematologyCatalogInstallationTests(TestCase):
 
         self.assertFalse(LabPanel.objects.exists())
 
-    def test_panel_installer_does_not_install_standalone_extension(self):
+    def test_panel_installer_installs_explicit_differential_presets(self):
         self.run_command("install_bundled_panels")
 
-        self.assertFalse(
-            LabTest.objects.filter(code__in=EXPECTED).exists()
+        self.assertEqual(
+            LabTest.objects.filter(code__in=EXPECTED).count(), len(EXPECTED)
         )
 
     def test_catalog_dry_run_does_not_persist_new_tests(self):
