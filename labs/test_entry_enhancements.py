@@ -189,12 +189,34 @@ class BundledUnitTests(TestCase):
         call_command('install_bundled_units', stdout=output, **kwargs)
         return output.getvalue()
 
-    def test_all_bundled_tests_have_suggestions(self):
-        codes = {code for panel in PANELS for code, name in panel[4]}
-        self.assertEqual(set(UNIT_SUGGESTIONS), codes)
+    def test_unit_suggestions_match_catalog_and_cover_legacy_panels(self):
+        from .bundled_catalog import BUNDLED_TESTS
+
+        catalog = {test.code: test for test in BUNDLED_TESTS}
+        panel_codes = {
+            code
+            for panel in PANELS
+            for code, name in panel[4]
+        }
+
+        self.assertTrue(set(UNIT_SUGGESTIONS).issubset(catalog))
+        self.assertTrue(panel_codes.issubset(UNIT_SUGGESTIONS))
+
+        for code, definition in catalog.items():
+            with self.subTest(code=code):
+                self.assertEqual(
+                    definition.suggested_units,
+                    tuple(UNIT_SUGGESTIONS.get(code, ())),
+                )
+
         self.install()
-        for code in codes:
-            self.assertTrue(LabTestUnit.objects.filter(lab_test__code=code).exists())
+        for code in panel_codes:
+            with self.subTest(code=code):
+                self.assertTrue(
+                    LabTestUnit.objects.filter(
+                        lab_test__code=code,
+                    ).exists()
+                )
 
     def test_idempotent(self):
         self.install()

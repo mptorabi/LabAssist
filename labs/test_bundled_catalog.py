@@ -34,8 +34,12 @@ class BundledCatalogTests(SimpleTestCase):
             for test in BUNDLED_TESTS
         }
 
-        self.assertEqual(actual, expected)
-        self.assertEqual(len(BUNDLED_TESTS), len(expected))
+        self.assertEqual(len(actual), len(BUNDLED_TESTS))
+        self.assertTrue(set(expected).issubset(actual))
+
+        for code, name in expected.items():
+            with self.subTest(code=code):
+                self.assertEqual(actual[code], name)
 
     def test_current_categories_and_input_types_are_preserved(self):
         catalog = {

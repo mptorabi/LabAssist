@@ -142,4 +142,45 @@ TEST_DEFINITIONS = (
         "THYROID_T3_TOTAL", "Triiodothyronine (T3) — total",
         "endocrinology", "Endocrinology", "numeric",
     ),
+    (
+        "DIFF_NEUT_PCT", "Neutrophils — percent of leukocytes, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "DIFF_NEUT_ABS", "Neutrophils — absolute count, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "DIFF_LYMPH_PCT", "Lymphocytes — percent of leukocytes, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "DIFF_LYMPH_ABS", "Lymphocytes — absolute count, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "DIFF_MONO_PCT", "Monocytes — percent of leukocytes, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "DIFF_MONO_ABS", "Monocytes — absolute count, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "DIFF_EOS_PCT", "Eosinophils — percent of leukocytes, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "DIFF_EOS_ABS", "Eosinophils — absolute count, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "DIFF_BASO_PCT", "Basophils — percent of leukocytes, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "DIFF_BASO_ABS", "Basophils — absolute count, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+
 )
