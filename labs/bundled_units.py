@@ -44,4 +44,9 @@ UNIT_SUGGESTIONS = {
     "DIFF_EOS_ABS": ("x 10(9)/L",),
     "DIFF_BASO_PCT": ("%",),
     "DIFF_BASO_ABS": ("x 10(9)/L",),
+    "CBC_RDW_CV": ("%",),
+    "CBC_RDW_SD": ("fL",),
+    "CBC_MPV": ("fL",),
+    "RETIC_PCT": ("%",),
+    "RETIC_ABS": ("x 10(9)/L",),
 }

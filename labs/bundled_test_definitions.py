@@ -182,5 +182,25 @@ TEST_DEFINITIONS = (
         "DIFF_BASO_ABS", "Basophils — absolute count, blood",
         "hematology", "Hematology", "numeric",
     ),
+    (
+        "CBC_RDW_CV", "Red cell distribution width — CV, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "CBC_RDW_SD", "Red cell distribution width — SD, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "CBC_MPV", "Mean platelet volume, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "RETIC_PCT", "Reticulocytes — percent of erythrocytes, blood",
+        "hematology", "Hematology", "numeric",
+    ),
+    (
+        "RETIC_ABS", "Reticulocytes — absolute count, blood",
+        "hematology", "Hematology", "numeric",
+    ),
 
 )
