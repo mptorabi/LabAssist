@@ -49,4 +49,5 @@ UNIT_SUGGESTIONS = {
     "CBC_MPV": ("fL",),
     "RETIC_PCT": ("%",),
     "RETIC_ABS": ("x 10(9)/L",),
+    "RETIC_IRF_PCT": ("%",),
 }

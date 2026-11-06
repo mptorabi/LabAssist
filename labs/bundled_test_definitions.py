@@ -202,5 +202,9 @@ TEST_DEFINITIONS = (
         "RETIC_ABS", "Reticulocytes — absolute count, blood",
         "hematology", "Hematology", "numeric",
     ),
+    (
+        "RETIC_IRF_PCT", "Immature reticulocyte fraction — percent of reticulocytes, blood",
+        "hematology", "Hematology", "numeric",
+    ),
 
 )
