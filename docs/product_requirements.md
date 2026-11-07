@@ -128,26 +128,41 @@ reviewed and confirmed by the user before saving.
 
 ## Current implementation
 
-- Patient records.
-- Individual laboratory result entry.
-- Per-patient result lists and per-test history.
-- Recorded notes and permission checks.
-- A single-result recorded-data report page.
-- 89 passing automated tests at this milestone.
+Status is based on the repository reviewed at `42eddba` plus the phase 1 local
+foundation changes. This section describes implemented capabilities, not clinical
+validation or a claim of complete catalogue coverage.
 
-Not yet implemented:
+- Patient records, individual result entry and permission-controlled views.
+- Grouped laboratory reports and multi-result entry with review before saving.
+- Editable panel selections and searchable active tests/aliases.
+- Bundled catalogue definitions, units and additive panel installation commands.
+  Catalogue installation remains separate from application startup and code updates.
+- Shared report metadata and per-result date overrides.
+- Per-patient result lists, per-test history and conservative numeric charts.
+- Recorded notes and a single-result recorded-data report page.
+- Private local secret initialization, debug disabled by default and loopback hosts.
+- English setup/update instructions and a manual backup/restore procedure.
 
-- A comprehensive preloaded test catalogue.
-- Laboratory report grouping and multi-result entry.
-- Evidence-based interpretation.
-- PDF export.
-- Photo or PDF extraction.
+The pre-phase-1 baseline passed 326 Django tests. Current phase validation is
+recorded in [phase-1-validation.md](phase-1-validation.md); test counts are not a
+fixed requirement or a substitute for clinical/security review.
+
+Not yet implemented or incomplete:
+
+- Complete reviewed catalogue coverage; user-facing entry of uncatalogued tests.
+- Full correction/voiding workflows and an audit trail identifying who changed what.
+- Historical catalogue snapshots/versioning for recorded results.
+- Structured specimen/context capture and complex result formats.
+- Evidence-based interpretation, PDF export and photo/PDF extraction.
+- Automated backup scheduling and a built-in restore workflow.
+- Patient-level access partitioning and a network deployment profile.
 
 ## Next implementation milestones
 
-1. Design report grouping and catalogue metadata.
-2. Add a reviewed initial catalogue and editable panel presets.
-3. Build multi-result entry with review before saving.
-4. Generate an initial PDF with recorded results and history.
-5. Add narrowly scoped, evidence-based explanations.
-6. Expand catalogue coverage and supported result structures.
+1. Validate the phase 1 local setup and backup/restore drill on Windows.
+2. Add attributable, auditable corrections to patient and report records.
+3. Generate an offline PDF containing recorded results and relevant history.
+4. Improve patient search, pagination and browser-level regression coverage.
+5. Expand reviewed catalogue coverage, specimen/context and result structures.
+6. Add narrowly scoped, evidence-based explanations only with reviewed rules,
+   sources, versions, limitations and tests.

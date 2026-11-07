@@ -12,20 +12,23 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
+from .local_config import load_debug, load_secret_key
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+# Local, loopback-only profile. See docs/local-setup.md before first startup.
+# Initialization is explicit: importing settings never creates a key.
+SECRET_KEY = load_secret_key(BASE_DIR)
+DEBUG = load_debug()
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-k5eqq)t=$ap%b^dus*00p1005j0*29vh%-_w1l6n4_%$bs#pe$'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+# Local HTTP only. Do not expose this profile on a LAN or the Internet.
+# HTTPS redirects, HSTS and Secure cookies require a separate HTTPS deployment.
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 
 # Application definition
