@@ -2,6 +2,8 @@
 {% block title %}Lab report #{{ report.pk }}{% endblock %}
 {% block content %}
 <h1>Lab report #{{ report.pk }}</h1>
+<p><a href="{% url 'labs:report_pdf' patient.pk report.pk %}">Download recorded-data PDF</a></p>
+<p>The PDF contains confidential patient information and up to 100 related earlier results. Save and share it securely. It is not an independently verified laboratory report.</p>
 <p><a href="{% url 'labs:report_corrections' patient.pk report.pk %}">Report corrections and history</a></p>
 <p>Patient: {{ patient.full_name }} (ID: {{ patient.pk }})</p>
 <p><a href="{% url 'labs:report_list' patient.pk %}">All reports for this patient</a> | <a href="{% url 'patients:detail' patient.pk %}">Return to patient</a></p>
