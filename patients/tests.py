@@ -88,7 +88,7 @@ class PatientAdminTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, patient.full_name)
 
-    def test_admin_can_create_patient(self):
+    def test_admin_cannot_create_patient_without_attribution(self):
         response = self.client.post(
             reverse("admin:patients_patient_add"),
             {
@@ -99,15 +99,12 @@ class PatientAdminTests(TestCase):
             },
         )
 
-        self.assertRedirects(
-            response,
-            reverse("admin:patients_patient_changelist"),
-        )
-        self.assertTrue(
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(
             Patient.objects.filter(full_name="New Test Patient").exists()
         )
 
-    def test_admin_rejects_future_birth_date(self):
+    def test_admin_rejects_add_even_with_invalid_birth_date(self):
         future_date = timezone.localdate() + timedelta(days=1)
 
         response = self.client.post(
@@ -119,11 +116,7 @@ class PatientAdminTests(TestCase):
             },
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(
-            response,
-            "Date of birth cannot be in the future.",
-        )
+        self.assertEqual(response.status_code, 403)
         self.assertFalse(
             Patient.objects.filter(full_name="Invalid Test Patient").exists()
         )

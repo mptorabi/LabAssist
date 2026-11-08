@@ -1,3 +1,4 @@
+from core.audit import create_record
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect, render
 from .forms import PatientForm
@@ -50,7 +51,7 @@ def patient_create(request):
         form = PatientForm(request.POST)
 
         if form.is_valid():
-            form.save()
+            create_record(form.save(commit=False), request.user)
             return redirect("patients:list")
     else:
         form = PatientForm()

@@ -33,6 +33,7 @@
         </dl>
 
         <h2>Recorded Result</h2>
+        <p><a href="{% url 'labs:result_corrections' patient.pk result.pk %}">Corrections and history</a></p>
         <dl>
             <dt>Result ID</dt>
             <dd>{{ result.pk }}</dd>

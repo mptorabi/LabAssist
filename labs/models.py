@@ -1,3 +1,4 @@
+from core.models import AttributedRecord
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -189,7 +190,7 @@ class LabPanelItem(models.Model):
     def __str__(self):
         return f"{self.panel.code}: {self.lab_test.code}"
 
-class LabReport(models.Model):
+class LabReport(AttributedRecord):
     patient = models.ForeignKey(
         "patients.Patient",
         on_delete=models.PROTECT,
@@ -254,7 +255,7 @@ class LabReport(models.Model):
 
 
 
-class LabResult(models.Model):
+class LabResult(AttributedRecord):
     patient = models.ForeignKey(
         "patients.Patient",
         on_delete=models.PROTECT,

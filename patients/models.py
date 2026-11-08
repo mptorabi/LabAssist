@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from core.models import AttributedRecord
 from django.db import models
 from django.utils import timezone
 
@@ -7,7 +8,7 @@ def validate_birth_date(value):
         raise ValidationError("Date of birth cannot be in the future.")
 
 
-class Patient(models.Model):
+class Patient(AttributedRecord):
     class SexAssignedAtBirth(models.TextChoices):
         UNKNOWN = "unknown", "Unknown / Not recorded"
         FEMALE = "female", "Female"
