@@ -1,3 +1,4 @@
+from core.audit import create_record
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -26,7 +27,7 @@ def lab_result_create(request, patient_pk):
         if form.is_valid():
             result = form.save(commit=False)
             result.patient = patient
-            result.save()
+            create_record(result, request.user)
 
             return redirect("patients:detail", pk=patient.pk)
     else:

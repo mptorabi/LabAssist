@@ -1,0 +1,28 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<h1>{{ record_label|capfirst }} #{{ record.pk }} — corrections and history</h1>
+<p>{{ record }}. <a href="{% url 'patients:detail' patient_id %}">Return to patient #{{ patient_id }}</a></p>
+<p>Created by: {{ record.created_by|default:'Unknown / legacy or external record' }}. Current revision: {{ record.revision }}.</p>
+<p>Correct transcription only against the source record. Patient, report and test identities cannot be reassigned here. Units and values are never converted automatically.</p>
+{% if can_change %}
+<form method="post">{% csrf_token %}
+{{ form.as_p }}
+<button type="submit">Save correction and reason</button>
+</form>
+{% endif %}
+<h2>Recorded history</h2>
+<p>History begins with this release. No prior creator or changes have been inferred. Snapshots contain sensitive patient data.</p>
+{% for event in history %}
+<section>
+<h3>{{ event.get_action_display }} — revision {{ event.revision }}</h3>
+<p>{{ event.occurred_at }} — {{ event.actor_name }} (user #{{ event.actor_id }})</p>
+<p>Reason: {{ event.reason|default:'Initial entry' }}</p>
+<details><summary>Before / after (stored field names)</summary>
+<h4>Before</h4><dl>{% for key, value in event.before.items %}<dt>{{ key }}</dt><dd>{{ value|default_if_none:'Not recorded' }}</dd>{% endfor %}</dl>
+<h4>After</h4><dl>{% for key, value in event.after.items %}<dt>{{ key }}</dt><dd>{{ value|default_if_none:'Not recorded' }}</dd>{% endfor %}</dl>
+</details>
+</section>
+{% empty %}<p>No application audit events recorded for this record yet.</p>{% endfor %}
+{% if history.has_previous %}<a href="?page={{ history.previous_page_number }}">Newer events</a>{% endif %}
+{% if history.has_next %}<a href="?page={{ history.next_page_number }}">Older events</a>{% endif %}
+{% endblock %}

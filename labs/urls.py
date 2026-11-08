@@ -1,3 +1,5 @@
+from core.corrections import correction_view
+from .models import LabReport, LabResult
 from django.urls import path
 
 from . import report_views, views
@@ -5,6 +7,12 @@ from . import report_views, views
 app_name = "labs"
 
 urlpatterns = [
+    path('patients/<int:patient_pk>/reports/<int:pk>/corrections/', correction_view(
+        LabReport, ('patients.view_patient', 'labs.view_labreport', 'labs.view_labresult')
+    ), name='report_corrections'),
+    path('patients/<int:patient_pk>/results/<int:pk>/corrections/', correction_view(
+        LabResult, ('patients.view_patient', 'labs.view_labresult')
+    ), name='result_corrections'),
     path(
         "patients/<int:patient_pk>/reports/",
         report_views.lab_report_list,

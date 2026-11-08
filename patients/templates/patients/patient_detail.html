@@ -23,6 +23,7 @@
             <dd>{{ patient.get_sex_assigned_at_birth_display }}</dd>
         </dl>
 
+        <p><a href="{% url 'patients:corrections' patient.pk %}">Corrections and history</a></p>
         {% include "labs/_patient_report_links.html" %}
 
         {% if perms.labs.view_labresult and perms.labs.add_labresult %}
@@ -61,6 +62,7 @@
                                     <a href="{% url 'labs:result_report' patient.pk result.pk %}">
                                         View Report
                                     </a>
+                                    <a href="{% url 'labs:result_corrections' patient.pk result.pk %}">Corrections and history</a>
                                 </td>
                                 <td>{{ result.unit|default:"Not recorded" }}</td>
                                 <td>

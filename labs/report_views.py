@@ -1,3 +1,4 @@
+from core.audit import create_record
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -152,12 +153,10 @@ def lab_report_create(request, patient_pk):
                     with transaction.atomic():
                         report = header_form.save(commit=False)
                         report.patient = patient
-                        report.full_clean()
-                        report.save()
+                        create_record(report, request.user)
                         for row in review_rows:
                             result = LabResult(patient=patient, report=report, **row)
-                            result.full_clean()
-                            result.save()
+                            create_record(result, request.user)
                     return redirect("patients:detail", pk=patient.pk)
                 reviewing = action == "review"
         elif not error:

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_safety import ClinicalReadOnlyAdminMixin
 
 from .models import (
     LabPanel,
@@ -49,7 +50,7 @@ class LabTestAdmin(admin.ModelAdmin):
 
 
 @admin.register(LabResult)
-class LabResultAdmin(admin.ModelAdmin):
+class LabResultAdmin(ClinicalReadOnlyAdminMixin, admin.ModelAdmin):
     list_display = (
         "patient",
         "lab_test",

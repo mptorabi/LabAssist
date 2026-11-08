@@ -2,6 +2,7 @@
 {% block title %}Lab report #{{ report.pk }}{% endblock %}
 {% block content %}
 <h1>Lab report #{{ report.pk }}</h1>
+<p><a href="{% url 'labs:report_corrections' patient.pk report.pk %}">Report corrections and history</a></p>
 <p>Patient: {{ patient.full_name }} (ID: {{ patient.pk }})</p>
 <p><a href="{% url 'labs:report_list' patient.pk %}">All reports for this patient</a> | <a href="{% url 'patients:detail' patient.pk %}">Return to patient</a></p>
 <dl>
@@ -20,7 +21,7 @@
 <tr>
 <th scope="row">{{ result.lab_test }}</th>
 <td>{{ result.test_date|date:"Y-m-d" }}</td>
-<td style="white-space:pre-wrap;">{{ result.value }}</td>
+<td style="white-space:pre-wrap;">{{ result.value }} <a href="{% url 'labs:result_corrections' patient.pk result.pk %}">Corrections and history</a></td>
 <td style="white-space:pre-wrap;">{{ result.unit|default:"Not provided" }}</td>
 <td style="white-space:pre-wrap;">{{ result.reference_range|default:"Not provided" }}</td>
 <td>{{ result.notes|default:"—"|linebreaksbr }}</td>
