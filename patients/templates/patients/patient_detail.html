@@ -5,6 +5,9 @@
 {% block content %}
     <section class="card" aria-labelledby="patient-detail-title">
         <h1 id="patient-detail-title">Patient Details</h1>
+        {% if can_view_lab_results %}
+            <p><a href="{% url 'patients:comparison' patient.pk %}">Compare recorded trends</a></p>
+        {% endif %}
 
         <dl>
             <dt>Full name</dt>
