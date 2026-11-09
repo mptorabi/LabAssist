@@ -37,6 +37,7 @@
         <h2>Lab Results</h2>
 
         {% if can_view_lab_results %}
+            {% include "core/search.html" with search_label="Test name or code" %}
             {% if lab_results %}
                 <table>
                     <thead>
@@ -78,8 +79,9 @@
                     No automated clinical interpretation is provided.
                 </p>
             {% else %}
-                <p>No lab results recorded for this patient.</p>
+                {% if query %}<p>No matching results for this patient.</p>{% else %}<p>No lab results recorded for this patient.</p>{% endif %}
             {% endif %}
+            {% include "core/pagination.html" %}
         {% else %}
             <p>You do not have permission to view lab results.</p>
         {% endif %}

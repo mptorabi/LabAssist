@@ -16,7 +16,8 @@ class CorrectionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for name in ('value', 'unit', 'reference_range', 'notes', 'laboratory_name', 'report_number'):
+        for name in ('value', 'unit', 'reference_range', 'notes', 'laboratory_name', 'report_number',
+                     'specimen', 'collection_time_text', 'received_time_text'):
             if name in self.fields:
                 self.fields[name].strip = False
 

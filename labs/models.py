@@ -191,6 +191,12 @@ class LabPanelItem(models.Model):
         return f"{self.panel.code}: {self.lab_test.code}"
 
 class LabReport(AttributedRecord):
+    specimen = models.CharField(max_length=200, blank=True,
+        help_text='Specimen exactly as reported; no default.')
+    collection_time_text = models.CharField(max_length=200, blank=True,
+        help_text='Collection date/time exactly as printed, including timezone if supplied. No timezone is inferred.')
+    received_time_text = models.CharField(max_length=200, blank=True,
+        help_text='Receipt date/time exactly as printed. Leave blank if absent.')
     patient = models.ForeignKey(
         "patients.Patient",
         on_delete=models.PROTECT,
@@ -256,6 +262,10 @@ class LabReport(AttributedRecord):
 
 
 class LabResult(AttributedRecord):
+    RESULT_KINDS = [('', 'Not classified'), ('numeric', 'Numeric'),
+                    ('qualitative', 'Qualitative'), ('text', 'Text')]
+    result_kind = models.CharField(max_length=16, blank=True, choices=RESULT_KINDS,
+        help_text='Explicit transcription classification; never inferred or used for interpretation.')
     patient = models.ForeignKey(
         "patients.Patient",
         on_delete=models.PROTECT,

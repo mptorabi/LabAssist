@@ -12,6 +12,7 @@
             </p>
         {% endif %}
 
+        {% include "core/search.html" with search_label="Patient name or exact ID" %}
         {% if patients %}
             <table>
                 <thead>
@@ -34,7 +35,8 @@
                 </tbody>
             </table>
         {% else %}
-            <p>No patients have been added yet.</p>
+            {% if query %}<p>No matching patients.</p>{% else %}<p>No patients have been added yet.</p>{% endif %}
         {% endif %}
+        {% include "core/pagination.html" %}
     </section>
 {% endblock %}

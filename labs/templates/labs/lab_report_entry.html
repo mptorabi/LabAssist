@@ -21,6 +21,9 @@ Panels are entry presets, not recommendations to order tests.</p>
             <dt>Laboratory</dt><dd>{{ header_form.cleaned_data.laboratory_name|default:"Not provided" }}</dd>
             <dt>Report number</dt><dd>{{ header_form.cleaned_data.report_number|default:"Not provided" }}</dd>
             <dt>Report issue date</dt><dd>{{ header_form.cleaned_data.report_date|date:"Y-m-d"|default:"Not provided" }}</dd>
+            <dt>Specimen</dt><dd style="white-space:pre-wrap;">{{ header_form.cleaned_data.specimen|default:"Not provided" }}</dd>
+            <dt>Collection date/time as reported</dt><dd style="white-space:pre-wrap;">{{ header_form.cleaned_data.collection_time_text|default:"Not provided" }}</dd>
+            <dt>Receipt date/time as reported</dt><dd style="white-space:pre-wrap;">{{ header_form.cleaned_data.received_time_text|default:"Not provided" }}</dd>
             <dt>Report notes</dt><dd>{{ header_form.cleaned_data.notes|default:"—"|linebreaksbr }}</dd>
         </dl>
         <div class="report-table-wrap" role="region" aria-label="Review results" tabindex="0">
@@ -29,7 +32,7 @@ Panels are entry presets, not recommendations to order tests.</p>
                 <th scope="col">Unit</th><th scope="col">Reference range</th><th scope="col">Notes</th></tr></thead>
             <tbody>{% for row in review_rows %}<tr>
                 <th scope="row">{{ row.lab_test }}</th><td>{{ row.test_date|date:"Y-m-d" }}</td>
-                <td class="reported-text">{{ row.value }}</td><td class="reported-text">{{ row.unit|default:"—" }}</td>
+                <td class="reported-text">{{ row.value }} ({{ row.result_kind|default:"Not classified" }})</td><td class="reported-text">{{ row.unit|default:"—" }}</td>
                 <td class="reported-text">{{ row.reference_range|default:"—" }}</td>
                 <td class="reported-text">{{ row.notes|default:"—" }}</td>
             </tr>{% endfor %}</tbody>
@@ -90,8 +93,10 @@ Panels are entry presets, not recommendations to order tests.</p>
                 <td>{{ row_form.value }}{{ row_form.value.errors }}</td>
                 <td>{{ row_form.unit }}{{ row_form.unit.errors }}</td>
                 <td>{{ row_form.reference_range }}{{ row_form.reference_range.errors }}</td>
-                <td><details {% if row_form.test_date.value or row_form.notes.value or row_form.errors %}open{% endif %}>
-                    <summary>Date / notes</summary>
+                <td><details {% if row_form.test_date.value or row_form.notes.value or row_form.result_kind.value or row_form.errors %}open{% endif %}>
+                    <summary>Date / notes / classification</summary>
+                    <p>{{ row_form.result_kind.label_tag }}{{ row_form.result_kind }}{{ row_form.result_kind.errors }}
+                    <small>Optional explicit classification. Never inferred; does not interpret or convert the value.</small></p>
                     <p>{{ row_form.test_date.label_tag }}{{ row_form.test_date }}{{ row_form.test_date.errors }}
                     <small>Leave blank to use the default test date.</small></p>
                     <p>{{ row_form.notes.label_tag }}{{ row_form.notes }}{{ row_form.notes.errors }}</p>
@@ -102,7 +107,7 @@ Panels are entry presets, not recommendations to order tests.</p>
             <button type="submit" name="action" value="review">Review results</button>
             <button type="submit" name="action" value="remove_blank" formnovalidate>Remove entirely blank rows</button>
         </p>
-        <p>To remove a populated row, clear its value, unit, range, date and notes first.</p>
+        <p>To remove a populated row, clear its value, unit, range, date, notes and classification first.</p>
     {% endif %}
 </form>
 <p><a href="{% url 'patients:detail' patient.pk %}">Return to patient</a></p>
