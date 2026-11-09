@@ -11,11 +11,16 @@
 <dt>Laboratory</dt><dd>{{ report.laboratory_name|default:"Not provided" }}</dd>
 <dt>Report number</dt><dd>{{ report.report_number|default:"Not provided" }}</dd>
 <dt>Report issue date</dt><dd>{{ report.report_date|date:"Y-m-d"|default:"Not provided" }}</dd>
+<dt>Specimen</dt><dd style="white-space:pre-wrap;">{{ report.specimen|default:"Not provided" }}</dd>
+<dt>Collection date/time as reported</dt><dd style="white-space:pre-wrap;">{{ report.collection_time_text|default:"Not provided" }}</dd>
+<dt>Receipt date/time as reported</dt><dd style="white-space:pre-wrap;">{{ report.received_time_text|default:"Not provided" }}</dd>
 <dt>Report notes</dt><dd>{{ report.notes|default:"—"|linebreaksbr }}</dd>
 </dl>
 <h2>Recorded results</h2>
+<p>Search and page selection affect this screen only, not the PDF. The PDF includes all linked results (maximum 100).</p>
+{% include "core/search.html" with search_label="Test name or code" %}
 <p>These are user-entered data, not independently verified laboratory results. Missing units and reference ranges have not been inferred.</p>
-<div style="overflow-x:auto;">
+<div style="overflow-x:auto;" role="region" aria-label="Recorded results" tabindex="0">
 <table>
 <thead><tr><th scope="col">Test</th><th scope="col">Test date</th><th scope="col">Reported value</th><th scope="col">Unit</th><th scope="col">Reported reference range</th><th scope="col">Notes</th></tr></thead>
 <tbody>
@@ -23,15 +28,16 @@
 <tr>
 <th scope="row">{{ result.lab_test }}</th>
 <td>{{ result.test_date|date:"Y-m-d" }}</td>
-<td style="white-space:pre-wrap;">{{ result.value }} <a href="{% url 'labs:result_corrections' patient.pk result.pk %}">Corrections and history</a></td>
+<td style="white-space:pre-wrap;">{{ result.value }} <small>({{ result.get_result_kind_display }})</small> <a href="{% url 'labs:result_corrections' patient.pk result.pk %}">Corrections and history</a></td>
 <td style="white-space:pre-wrap;">{{ result.unit|default:"Not provided" }}</td>
 <td style="white-space:pre-wrap;">{{ result.reference_range|default:"Not provided" }}</td>
 <td>{{ result.notes|default:"—"|linebreaksbr }}</td>
 </tr>
-{% empty %}<tr><td colspan="6">No linked results.</td></tr>{% endfor %}
+{% empty %}<tr><td colspan="6">{% if query %}No matching results.{% else %}No linked results.{% endif %}</td></tr>{% endfor %}
 </tbody>
 </table>
 </div>
+{% include "core/pagination.html" %}
 <h2>Analysis and trends</h2>
 <p>Not implemented on this page yet. No interpretation has been generated.</p>
 {% endblock %}

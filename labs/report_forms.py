@@ -2,7 +2,7 @@ from django import forms
 from django.forms import BaseFormSet, formset_factory
 from django.utils import timezone
 
-from .models import LabReport, LabTest
+from .models import LabReport, LabResult, LabTest
 
 
 class LabReportEntryForm(forms.ModelForm):
@@ -24,6 +24,9 @@ class LabReportEntryForm(forms.ModelForm):
             "laboratory_name",
             "report_number",
             "report_date",
+            "specimen",
+            "collection_time_text",
+            "received_time_text",
             "notes",
         )
         labels = {
@@ -42,7 +45,7 @@ class LabReportEntryForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for name in ("laboratory_name", "report_number", "notes"):
+        for name in ("laboratory_name", "report_number", "notes", "specimen", "collection_time_text", "received_time_text"):
             self.fields[name].strip = False
 
     def clean_default_test_date(self):
@@ -57,6 +60,8 @@ class LabReportEntryForm(forms.ModelForm):
 
 
 class LabReportResultRowForm(forms.Form):
+    result_kind = forms.ChoiceField(choices=LabResult.RESULT_KINDS, required=False,
+                                    label="Result classification")
     lab_test = forms.ModelChoiceField(
         queryset=LabTest.objects.none(),
         widget=forms.HiddenInput(),
@@ -122,7 +127,7 @@ class LabReportResultRowForm(forms.Form):
 
         has_other_data = any(
             bool(cleaned_data.get(field, "").strip())
-            for field in ("unit", "reference_range", "notes")
+            for field in ("unit", "reference_range", "notes", "result_kind")
         ) or cleaned_data.get("test_date") is not None
 
         if not has_value and has_other_data:
@@ -172,7 +177,7 @@ LabReportResultFormSet = formset_factory(
     LabReportResultRowForm,
     formset=BaseLabReportResultFormSet,
     extra=0,
-    # Six fields per row; stay below Django's default 1000 POST-field limit.
+    # Seven visible/hidden data fields per row; below the default 1000 POST-field limit.
     max_num=100,
     validate_max=True,
     absolute_max=100,

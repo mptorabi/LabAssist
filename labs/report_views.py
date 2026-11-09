@@ -1,3 +1,5 @@
+from django.db.models import Q
+from core.search import search_query
 from core.audit import create_record
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
@@ -147,7 +149,7 @@ def lab_report_create(request, patient_pk):
                     review_rows.append({
                         "lab_test": data["lab_test"],
                         "test_date": data.get("test_date") or header_form.cleaned_data["default_test_date"],
-                        **{field: data[field] for field in ("value", "unit", "reference_range", "notes")},
+                        **{field: data[field] for field in ("value", "unit", "reference_range", "notes", "result_kind")},
                     })
                 if action == "save":
                     with transaction.atomic():
@@ -170,7 +172,7 @@ def lab_report_create(request, patient_pk):
         row_form.test_label = label
         if test:
             row_form.fields["unit"].widget.attrs["list"] = f'unit-options-{test["id"]}'
-        for name in ("value", "unit", "reference_range", "test_date", "notes"):
+        for name in ("value", "unit", "reference_range", "test_date", "notes", "result_kind"):
             row_form.fields[name].widget.attrs.update({
                 "aria-label": f"{label}: {row_form.fields[name].label}",
                 "autocomplete": "off",
@@ -194,10 +196,14 @@ def lab_report_create(request, patient_pk):
 def lab_report_list(request, patient_pk):
     patient = get_object_or_404(Patient, pk=patient_pk)
     reports = patient.lab_reports.order_by("-created_at", "-pk")
+    query = search_query(request)
+    if query:
+        reports = reports.filter(Q(laboratory_name__icontains=query) | Q(report_number__icontains=query))
     page = Paginator(reports, 20).get_page(request.GET.get("page"))
     return render(request, "labs/lab_report_list.html", {
         "patient": patient,
         "page_obj": page,
+        "query": query,
     })
 
 
@@ -213,10 +219,15 @@ def lab_report_detail(request, patient_pk, report_pk):
         pk=report_pk,
         patient_id=patient_pk,
     )
+    results = report.results.select_related('lab_test').order_by('test_date', 'lab_test__name', 'pk')
+    query = search_query(request)
+    if query:
+        results = results.filter(Q(lab_test__name__icontains=query) | Q(lab_test__code__icontains=query))
+    page = Paginator(results, 20).get_page(request.GET.get('page'))
     return render(request, "labs/lab_report_detail.html", {
         "patient": report.patient,
         "report": report,
-        "results": report.results.select_related("lab_test").order_by(
-            "test_date", "lab_test__name", "pk",
-        ),
+        "results": page,
+        "page_obj": page,
+        "query": query,
     })

@@ -35,6 +35,7 @@ class LabResultForm(forms.ModelForm):
             "lab_test",
             "test_date",
             "value",
+            "result_kind",
             "unit",
             "reference_range",
             "notes",

@@ -47,6 +47,9 @@
             <dt>Reported value</dt>
             <dd>{{ result.value }}</dd>
 
+            <dt>Result classification</dt>
+            <dd>{{ result.get_result_kind_display }}</dd>
+
             <dt>Unit</dt>
             <dd>{{ result.unit|default:"Not recorded" }}</dd>
 
