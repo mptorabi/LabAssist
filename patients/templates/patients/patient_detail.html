@@ -23,6 +23,22 @@
             <dd>{{ patient.get_sex_assigned_at_birth_display }}</dd>
         </dl>
 
+        <h2>Optional patient context</h2>
+        <p>User-reported information; not independently verified. Blank means not recorded.
+           These entries are not automatically applied to historical laboratory reports.</p>
+        <dl>
+            <dt>Height (cm)</dt><dd>{{ patient.height_cm|default_if_none:"Not recorded" }}</dd>
+            <dt>Height measured on</dt><dd>{{ patient.height_measured_on|date:"Y-m-d"|default:"Not recorded" }}</dd>
+            <dt>Weight (kg)</dt><dd>{{ patient.weight_kg|default_if_none:"Not recorded" }}</dd>
+            <dt>Weight measured on</dt><dd>{{ patient.weight_measured_on|date:"Y-m-d"|default:"Not recorded" }}</dd>
+            <dt>Medications</dt><dd>{{ patient.medications|default:"Not recorded"|linebreaksbr }}</dd>
+            <dt>Medications as of</dt><dd>{{ patient.medications_as_of|date:"Y-m-d"|default:"Not recorded" }}</dd>
+            <dt>Underlying conditions</dt><dd>{{ patient.underlying_conditions|default:"Not recorded"|linebreaksbr }}</dd>
+            <dt>Conditions as of</dt><dd>{{ patient.conditions_as_of|date:"Y-m-d"|default:"Not recorded" }}</dd>
+        </dl>
+        <p>Dates are optional. An unknown date does not mean the information is current.
+           Corrections and history retain earlier entries; this profile is not a longitudinal measurement log.</p>
+
         <p><a href="{% url 'patients:corrections' patient.pk %}">Corrections and history</a></p>
         {% include "labs/_patient_report_links.html" %}
 

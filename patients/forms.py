@@ -10,6 +10,8 @@ class PatientForm(forms.ModelForm):
             "full_name",
             "date_of_birth",
             "sex_assigned_at_birth",
+            "height_cm", "height_measured_on", "weight_kg", "weight_measured_on",
+            "medications", "medications_as_of", "underlying_conditions", "conditions_as_of",
         ]
 
         labels = {
@@ -17,6 +19,11 @@ class PatientForm(forms.ModelForm):
             "date_of_birth": "Date of birth",
         }
         widgets = {
+            **{name: forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'})
+               for name in ('height_measured_on', 'weight_measured_on',
+                            'medications_as_of', 'conditions_as_of')},
+            "medications": forms.Textarea(attrs={'rows': 3}),
+            "underlying_conditions": forms.Textarea(attrs={'rows': 3}),
             "date_of_birth": forms.DateInput(
                 format="%Y-%m-%d",
                 attrs={"type": "date"},

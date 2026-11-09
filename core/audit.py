@@ -8,7 +8,9 @@ from django.utils import timezone
 from .models import RecordAudit
 
 EDITABLE = {
-    'patients.patient': ('full_name', 'date_of_birth', 'sex_assigned_at_birth'),
+    'patients.patient': ('full_name', 'date_of_birth', 'sex_assigned_at_birth',
+                         'height_cm', 'height_measured_on', 'weight_kg', 'weight_measured_on',
+                         'medications', 'medications_as_of', 'underlying_conditions', 'conditions_as_of'),
     'labs.labreport': ('laboratory_name', 'report_number', 'report_date', 'notes',
                        'specimen', 'collection_time_text', 'received_time_text'),
     'labs.labresult': ('test_date', 'value', 'unit', 'reference_range', 'notes', 'result_kind'),

@@ -39,7 +39,8 @@ def correction_view(model, view_permissions):
     fields = EDITABLE[label]
     form_class = modelform_factory(model, form=CorrectionForm, fields=fields,
         widgets={name: forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'})
-                 for name in ('date_of_birth', 'report_date', 'test_date') if name in fields})
+                 for name in ('date_of_birth', 'report_date', 'test_date', 'height_measured_on',
+                              'weight_measured_on', 'medications_as_of', 'conditions_as_of') if name in fields})
 
     @login_required
     @permission_required(view_permissions, raise_exception=True)
