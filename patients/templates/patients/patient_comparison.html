@@ -1,0 +1,25 @@
+{% extends "core/base.html" %}
+{% block title %}Compare Recorded Trends | LabAssist{% endblock %}
+{% block content %}
+<section class="card">
+<h1>Compare recorded trends</h1>
+<p>Patient: {{ patient.full_name }}</p>
+<p>Read-only review, not clinical interpretation. Select up to four tests. Charts have independent value and date scales: visual slopes and heights are not comparable between charts. No conversion, normalization, correlation or diagnosis is performed.</p>
+<form method="get">
+{{ form.as_p }}
+<button type="submit">Show recorded observations</button>
+</form>
+<p>Groups require exact recorded test, unit, specimen, laboratory, reference range and result classification. Missing specimen or laboratory isolates each observation. Matching metadata does not establish identical methods or clinical comparability. Patient profile context is not applied to historical results.</p>
+<p>Each dot is one observation. Points are not connected; same-day observations may overlap. Axes use observed values, not necessarily zero. Dates are test dates. All selected results, including text and comparison values, remain in the tables. Tick labels beginning with ~ are rounded.</p>
+{% for section in sections %}
+<section aria-label="Recorded test group">
+<h2>{{ section.lab_test.name }} ({{ section.lab_test.code }})</h2>
+<p>Specimen: {{ section.specimen|default:"Not recorded" }}; laboratory: {{ section.laboratory|default:"Not recorded" }}; reported reference range: {{ section.reference_range|default:"Not recorded" }}; classification: {{ section.result_kind|default:"Not classified" }}.</p>
+{% include "patients/_comparison_observations.html" with history_charts=section.history_charts history_rows=section.history_rows %}
+</section>
+{% empty %}
+<p>No observations displayed. Select tests and a valid optional date interval; an empty interval has no results.</p>
+{% endfor %}
+<p><a href="{% url 'patients:detail' patient.pk %}">Back to Patient</a></p>
+</section>
+{% endblock %}

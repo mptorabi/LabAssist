@@ -1,0 +1,87 @@
+            {% for chart in history_charts %}
+                <h3>Recorded unit: {{ chart.unit }} ({{ chart.count }} observations)</h3>
+                {% if chart.points %}
+                    <p>
+                        Observed minimum: {{ chart.low }};
+                        maximum: {{ chart.high }}.
+                        Dates: {{ chart.start|date:"Y-m-d" }}
+                        to {{ chart.end|date:"Y-m-d" }}.
+                    </p>
+                    <p>Vertical axis: recorded value ({{ chart.unit }}). Tick labels prefixed with ~ are rounded; exact values remain in the table.</p>
+                    <svg viewBox="0 0 720 330"
+                         role="img"
+                         aria-label="Recorded observations; exact values and dates are in the table below"
+                         style="width:100%;max-width:800px;background:white;color:black">
+                        <text x="120" y="20" font-size="14">Recorded value</text>
+                        {% for tick in chart.ticks %}
+                            <path d="M120 {{ tick.y }} H600" fill="none" stroke="#ddd"/>
+                            <text x="110" y="{{ tick.y }}" text-anchor="end"
+                                  dominant-baseline="middle" font-size="13">{{ tick.label }}</text>
+                        {% endfor %}
+                        <path d="M120 40 V240 H600" fill="none" stroke="black"/>
+                        {% for point in chart.points %}
+                            <circle cx="{{ point.x }}" cy="{{ point.y }}"
+                                    r="5" fill="#145da0">
+                                <title>{{ point.result.test_date|date:"Y-m-d" }}: {{ point.result.value }} {{ chart.unit }} (result #{{ point.result.pk }})</title>
+                            </circle>
+                        {% endfor %}
+                        {% if chart.same_day %}
+                            <text x="360" y="265" text-anchor="middle" font-size="13">
+                                {{ chart.start|date:"Y-m-d" }}
+                            </text>
+                        {% else %}
+                            <text x="140" y="265" text-anchor="middle" font-size="13">
+                                {{ chart.start|date:"Y-m-d" }}
+                            </text>
+                            <text x="580" y="265" text-anchor="middle" font-size="13">
+                                {{ chart.end|date:"Y-m-d" }}
+                            </text>
+                        {% endif %}
+                        <text x="360" y="300" text-anchor="middle" font-size="14">Test date</text>
+                    </svg>
+                {% else %}
+                    <p>
+                        At least two eligible observations with this exact unit
+                        are needed for a plot.
+                    </p>
+                {% endif %}
+            {% empty %}
+                <p>No eligible observations to plot.</p>
+            {% endfor %}
+
+            <h2>All recorded results</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Test date</th>
+                        <th scope="col">Result</th>
+                        <th scope="col">Unit</th>
+                        <th scope="col">Reported reference range</th>
+                        <th scope="col">Notes</th>
+                        <th scope="col">Plot eligibility</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in history_rows %}
+                        <tr>
+                            <td>{{ row.result.test_date|date:"Y-m-d" }}</td>
+                            <td>
+                                <a href="{% url 'labs:result_report' patient.pk row.result.pk %}">
+                                    {{ row.result.value }}
+                                </a>
+                            </td>
+                            <td>{{ row.result.unit|default:"Not recorded" }}</td>
+                            <td>
+                                {{ row.result.reference_range|default:"Not recorded" }}
+                            </td>
+                            <td>
+                                {{ row.result.notes|default:"Not recorded"|linebreaksbr }}
+                            </td>
+                            <td>
+                                {{ row.reason|default:"Eligible; plotted only if this unit group has at least two observations." }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
